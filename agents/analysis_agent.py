@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, List, Optional, Tuple
 
 from tools.data_extractor import extract_intel
 from tools.knowledge_base import get_latest_snapshot
@@ -17,7 +17,7 @@ SOURCE_BASE_SCORE = {
 }
 
 
-def score_item(item: dict[str, Any], extracted: dict[str, Any]) -> float:
+def score_item(item: Dict[str, Any], extracted: Dict[str, Any]) -> float:
     base = SOURCE_BASE_SCORE.get(item.get("source_type", "search_result"), 0.52)
     publish_date = item.get("publish_date", "")
     recency_penalty = 0.0 if publish_date else 0.05
@@ -26,9 +26,9 @@ def score_item(item: dict[str, Any], extracted: dict[str, Any]) -> float:
 
 
 def analyze_results(
-    target: str, search_results: list[dict[str, Any]]
-) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
-    analysis_results: list[dict[str, Any]] = []
+    target: str, search_results: List[Dict[str, Any]]
+) -> Tuple[List[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    analysis_results: List[Dict[str, Any]] = []
     for item in search_results:
         extracted = extract_intel(item.get("content", ""), target)
         if not extracted:

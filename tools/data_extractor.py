@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any
+from typing import Any, Dict, Optional
 
 from config import config, llm_client
 
@@ -51,7 +51,7 @@ def _extract_dates(content: str) -> list[str]:
     return re.findall(r"\d{4}-\d{2}-\d{2}", content)[:3]
 
 
-def _heuristic_extract(content: str, company: str) -> dict[str, Any] | None:
+def _heuristic_extract(content: str, company: str) -> Optional[Dict[str, Any]]:
     if company not in content:
         return None
     lines = [line.strip() for line in content.splitlines() if line.strip()]
@@ -72,7 +72,7 @@ def _heuristic_extract(content: str, company: str) -> dict[str, Any] | None:
     }
 
 
-def extract_intel(content: str, company: str) -> dict[str, Any] | None:
+def extract_intel(content: str, company: str) -> Optional[Dict[str, Any]]:
     """Extract structured intelligence or return None if irrelevant."""
     if not content.strip():
         return None

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Iterable
+from typing import Dict, Iterable, List, Tuple
 
 from tools.web_fetcher import fetch
 from tools.web_search import search
@@ -18,18 +18,18 @@ DIMENSION_QUERY_TEMPLATES = {
 }
 
 
-def build_queries(company: str, dimensions: Iterable[str]) -> list[tuple[str, str]]:
+def build_queries(company: str, dimensions: Iterable[str]) -> List[Tuple[str, str]]:
     year = str(date.today().year)
-    queries: list[tuple[str, str]] = []
+    queries: List[Tuple[str, str]] = []
     for dimension in dimensions:
         for template in DIMENSION_QUERY_TEMPLATES.get(dimension, []):
             queries.append((dimension, template.format(company=company, year=year)))
     return queries
 
 
-def run_search(target: str, dimensions: list[str], time_range: str) -> list[dict]:
+def run_search(target: str, dimensions: List[str], time_range: str) -> List[Dict]:
     """Search and optionally fetch high-value sources."""
-    collected: list[dict] = []
+    collected: List[Dict] = []
     for dimension, query in build_queries(target, dimensions):
         for item in search(query, num=3):
             fetched = fetch(item["url"])

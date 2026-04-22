@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from agents.alert_agent import generate_alerts
 from agents.analysis_agent import analyze_results
@@ -17,7 +17,7 @@ from tools.report_builder import get_logger
 logger = get_logger("marketintel.orchestrator")
 
 
-def _infer_intent_type(targets: list[str], dimensions: list[str]) -> str:
+def _infer_intent_type(targets: List[str], dimensions: List[str]) -> str:
     if len(targets) > 1:
         return "TYPE_B"
     if len(dimensions) == 1:
@@ -26,21 +26,21 @@ def _infer_intent_type(targets: list[str], dimensions: list[str]) -> str:
 
 
 def run_analysis(
-    targets: list[str],
-    dimensions: list[str] | None = None,
-    time_range: str | None = None,
+    targets: List[str],
+    dimensions: Optional[List[str]] = None,
+    time_range: Optional[str] = None,
     output_format: str = "web",
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Run the MVP analysis chain."""
     dimensions = dimensions or list(config.default_dimensions)
     time_range = time_range or config.default_time_range
     task_id = f"TASK-{int(datetime.utcnow().timestamp())}"
     intent_type = _infer_intent_type(targets, dimensions)
 
-    all_search_results: list[dict[str, Any]] = []
-    all_analysis_results: list[dict[str, Any]] = []
-    all_alerts: list[dict[str, Any]] = []
-    reports: list[dict[str, Any]] = []
+    all_search_results: List[Dict[str, Any]] = []
+    all_analysis_results: List[Dict[str, Any]] = []
+    all_alerts: List[Dict[str, Any]] = []
+    reports: List[Dict[str, Any]] = []
 
     for target in targets:
         logger.info("[Search Agent] searching %s", target)

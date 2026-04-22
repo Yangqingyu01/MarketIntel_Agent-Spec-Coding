@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 try:
     import chromadb
@@ -37,6 +37,16 @@ def _connect_sqlite() -> sqlite3.Connection:
     return connection
 
 
+def initialize_storage() -> None:
+    """Ensure local persistence backends exist for first-run startup."""
+    _connect_sqlite().close()
+    if not config.config_path.exists():
+        config.config_path.write_text(
+            json.dumps({"competitors": []}, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+
 def _get_collection():
     global _client, _collection
     if chromadb is None:
@@ -47,13 +57,14 @@ def _get_collection():
     return _collection
 
 
-def load_competitors() -> dict[str, Any]:
+def load_competitors() -> Dict[str, Any]:
+    initialize_storage()
     if not config.config_path.exists():
         return {"competitors": []}
     return json.loads(config.config_path.read_text(encoding="utf-8"))
 
 
-def save_competitor(competitor: dict[str, Any]) -> dict[str, Any]:
+def save_competitor(competitor: Dict[str, Any]) -> Dict[str, Any]:
     payload = load_competitors()
     payload.setdefault("competitors", []).append(competitor)
     config.config_path.write_text(
@@ -63,7 +74,7 @@ def save_competitor(competitor: dict[str, Any]) -> dict[str, Any]:
     return payload
 
 
-def save_intel(intel: dict[str, Any], raw_content: str) -> None:
+def save_intel(intel: Dict[str, Any], raw_content: str) -> None:
     collection = _get_collection()
     if collection is None:
         return
@@ -90,11 +101,11 @@ def save_intel(intel: dict[str, Any], raw_content: str) -> None:
     )
 
 
-def search_history(company: str, dimension: str | None = None, n: int = 5) -> list[dict]:
+def search_history(company: str, dimension: Optional[str] = None, n: int = 5) -> List[Dict]:
     collection = _get_collection()
     if collection is None:
         return []
-    where: dict[str, Any] = {"company": company}
+    where: Dict[str, Any] = {"company": company}
     if dimension:
         where["dimension"] = dimension
     count = collection.count()
@@ -110,7 +121,7 @@ def search_history(company: str, dimension: str | None = None, n: int = 5) -> li
     return [{"content": doc, "metadata": meta} for doc, meta in zip(docs, metas)]
 
 
-def get_latest_snapshot(company: str) -> dict[str, Any] | None:
+def get_latest_snapshot(company: str) -> Optional[Dict[str, Any]]:
     results = search_history(company, n=10)
     if not results:
         return None
@@ -121,7 +132,7 @@ def get_latest_snapshot(company: str) -> dict[str, Any] | None:
     )[0]
 
 
-def record_alert(alert: dict[str, Any]) -> None:
+def record_alert(alert: Dict[str, Any]) -> None:
     connection = _connect_sqlite()
     connection.execute(
         """
@@ -140,7 +151,9 @@ def record_alert(alert: dict[str, Any]) -> None:
     connection.close()
 
 
-def find_similar_alert(company: str, change_type: str, description: str) -> dict[str, Any] | None:
+def find_similar_alert(
+    company: str, change_type: str, description: str
+) -> Optional[Dict[str, Any]]:
     connection = _connect_sqlite()
     row = connection.execute(
         """

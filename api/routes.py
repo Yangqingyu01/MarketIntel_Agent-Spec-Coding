@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Dict, List
+
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
@@ -14,13 +16,13 @@ router = APIRouter(prefix="/api")
 
 
 class AnalyzeRequest(BaseModel):
-    targets: list[str] = Field(..., min_length=1)
-    dimensions: list[str] = Field(default_factory=lambda: list(config.default_dimensions))
+    targets: List[str] = Field(..., min_length=1)
+    dimensions: List[str] = Field(default_factory=lambda: list(config.default_dimensions))
     time_range: str = config.default_time_range
 
 
 @router.post("/analyze")
-async def analyze(req: AnalyzeRequest) -> dict:
+async def analyze(req: AnalyzeRequest) -> Dict:
     result = run_analysis(
         targets=req.targets,
         dimensions=req.dimensions,
@@ -35,16 +37,16 @@ async def analyze(req: AnalyzeRequest) -> dict:
 
 
 @router.get("/alerts")
-async def get_alerts() -> dict:
+async def get_alerts() -> Dict:
     return {"alerts": []}
 
 
 @router.get("/config/competitors")
-async def list_competitors() -> dict:
+async def list_competitors() -> Dict:
     return load_competitors()
 
 
 @router.post("/config/competitors")
-async def add_competitor(competitor: dict) -> dict:
+async def add_competitor(competitor: Dict) -> Dict:
     save_competitor(competitor)
     return {"ok": True}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import httpx
 from bs4 import BeautifulSoup
+from typing import Dict, Optional
 
 from config import config
 
@@ -17,7 +18,7 @@ HEADERS = {
 }
 
 
-def fetch(url: str, timeout: int | None = None) -> dict:
+def fetch(url: str, timeout: Optional[int] = None) -> Dict:
     """Fetch a page and extract readable text content."""
     try:
         response = httpx.get(

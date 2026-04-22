@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Dict, List
 from urllib.parse import urlparse
 
 import httpx
@@ -17,8 +18,8 @@ def extract_domain(url: str) -> str:
     return parsed.netloc.replace("www.", "")
 
 
-def _normalize_serper(items: list[dict], query: str, limit: int) -> list[dict]:
-    results: list[dict] = []
+def _normalize_serper(items: List[Dict], query: str, limit: int) -> List[Dict]:
+    results: List[Dict] = []
     today = date.today().isoformat()
     for item in items[:limit]:
         link = item.get("link", "")
@@ -37,7 +38,7 @@ def _normalize_serper(items: list[dict], query: str, limit: int) -> list[dict]:
     return results
 
 
-def _search_serper(query: str, num: int) -> list[dict]:
+def _search_serper(query: str, num: int) -> List[Dict]:
     if not config.serper_api_key:
         return []
     response = httpx.post(
@@ -51,7 +52,7 @@ def _search_serper(query: str, num: int) -> list[dict]:
     return _normalize_serper(organic, query, num)
 
 
-def _search_tavily(query: str, num: int) -> list[dict]:
+def _search_tavily(query: str, num: int) -> List[Dict]:
     if not config.tavily_api_key:
         return []
     response = httpx.post(
@@ -82,7 +83,7 @@ def _search_tavily(query: str, num: int) -> list[dict]:
     ]
 
 
-def search(query: str, num: int = 5) -> list[dict]:
+def search(query: str, num: int = 5) -> List[Dict]:
     """Execute a single query and return normalized results."""
     try:
         results = _search_serper(query, num)

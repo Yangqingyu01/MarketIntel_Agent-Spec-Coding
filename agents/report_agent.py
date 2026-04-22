@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 from tools.report_builder import utc_now_iso
 
@@ -11,10 +11,10 @@ from tools.report_builder import utc_now_iso
 def build_report(
     task_id: str,
     target: str,
-    analysis_results: list[dict[str, Any]],
-    baseline: dict[str, Any] | None = None,
-) -> dict[str, Any]:
-    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    analysis_results: List[Dict[str, Any]],
+    baseline: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for item in analysis_results:
         grouped[item.get("dimension", "product")].append(item)
 

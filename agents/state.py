@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, TypedDict
+from typing import Any, Dict, List, Literal, TypedDict
 
 
 Dimension = Literal["product", "pricing", "funding", "talent", "strategy"]
@@ -30,7 +30,7 @@ class IntelligenceItem(TypedDict, total=False):
     extracted_data: str
     evidence_quote: str
     credibility: float
-    entities: dict[str, list[str]]
+    entities: Dict[str, List[str]]
     source_url: str
     source_name: str
     publish_date: str
@@ -47,19 +47,19 @@ class AlertItem(TypedDict, total=False):
     title: str
     description: str
     detected_at: str
-    recommended_actions: list[dict[str, str]]
+    recommended_actions: List[Dict[str, str]]
 
 
 class IntelState(TypedDict, total=False):
     query: str
     task_id: str
     intent_type: IntentType
-    targets: list[str]
-    dimensions: list[Dimension]
+    targets: List[str]
+    dimensions: List[Dimension]
     time_range: str
     output_format: Literal["web", "feishu", "summary"]
-    search_results: list[SearchResult]
-    analysis_results: list[IntelligenceItem]
-    alerts: list[AlertItem]
-    report: dict[str, Any]
+    search_results: List[SearchResult]
+    analysis_results: List[IntelligenceItem]
+    alerts: List[AlertItem]
+    report: Dict[str, Any]
     error: str

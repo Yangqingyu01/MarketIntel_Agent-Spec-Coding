@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -18,7 +18,7 @@ def _fallback_env(primary: str, secondary: str, default: str = "") -> str:
     return os.getenv(primary) or os.getenv(secondary) or default
 
 
-@dataclass(slots=True)
+@dataclass
 class AppConfig:
     repo_root: Path = field(default_factory=lambda: Path(__file__).resolve().parent)
 
@@ -72,7 +72,7 @@ class AppConfig:
         default_factory=lambda: int(os.getenv("FETCH_TIMEOUT_SECONDS", "10"))
     )
     default_time_range: str = "近3个月"
-    default_dimensions: tuple[str, ...] = (
+    default_dimensions: Tuple[str, ...] = (
         "product",
         "pricing",
         "funding",
