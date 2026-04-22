@@ -1,0 +1,90 @@
+"""Main orchestration flow for MarketIntel MVP analysis."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
+
+from agents.alert_agent import generate_alerts
+from agents.analysis_agent import analyze_results
+from agents.report_agent import build_report
+from agents.search_agent import run_search
+from config import config
+from tools.knowledge_base import save_intel
+from tools.report_builder import get_logger
+
+
+logger = get_logger("marketintel.orchestrator")
+
+
+def _infer_intent_type(targets: list[str], dimensions: list[str]) -> str:
+    if len(targets) > 1:
+        return "TYPE_B"
+    if len(dimensions) == 1:
+        return "TYPE_C"
+    return "TYPE_A"
+
+
+def run_analysis(
+    targets: list[str],
+    dimensions: list[str] | None = None,
+    time_range: str | None = None,
+    output_format: str = "web",
+) -> dict[str, Any]:
+    """Run the MVP analysis chain."""
+    dimensions = dimensions or list(config.default_dimensions)
+    time_range = time_range or config.default_time_range
+    task_id = f"TASK-{int(datetime.utcnow().timestamp())}"
+    intent_type = _infer_intent_type(targets, dimensions)
+
+    all_search_results: list[dict[str, Any]] = []
+    all_analysis_results: list[dict[str, Any]] = []
+    all_alerts: list[dict[str, Any]] = []
+    reports: list[dict[str, Any]] = []
+
+    for target in targets:
+        logger.info("[Search Agent] searching %s", target)
+        search_results = run_search(target, dimensions, time_range)
+        all_search_results.extend(search_results)
+
+        logger.info("[Analysis Agent] analyzing %s", target)
+        analysis_results, baseline = analyze_results(target, search_results)
+        for intel in analysis_results:
+            save_intel(intel, intel.get("evidence_quote", ""))
+        all_analysis_results.extend(analysis_results)
+
+        logger.info("[Alert Agent] evaluating %s", target)
+        alerts = generate_alerts(target, analysis_results, baseline)
+        all_alerts.extend(alerts)
+
+        logger.info("[Report Agent] building report for %s", target)
+        reports.append(build_report(task_id, target, analysis_results, baseline))
+
+    final_report = reports[0] if len(reports) == 1 else {
+        "report_id": f"RPT-{task_id}",
+        "report_type": "comparison",
+        "target": ", ".join(targets),
+        "generated_at": reports[0]["generated_at"] if reports else "",
+        "executive_summary": f"已完成 {len(targets)} 个竞品的对比分析。",
+        "dimensions_detail": {report["target"]: report["dimensions_detail"] for report in reports},
+        "changes_summary": "初始版本未生成跨竞品变化摘要",
+        "chart_data": [],
+        "recommended_actions": [],
+        "key_insights": [report["executive_summary"] for report in reports],
+        "data_quality_note": f"总计提取 {len(all_analysis_results)} 条结构化情报",
+    }
+
+    return {
+        "query": f"分析 {', '.join(targets)}",
+        "task_id": task_id,
+        "intent_type": intent_type,
+        "targets": targets,
+        "dimensions": dimensions,
+        "time_range": time_range,
+        "output_format": output_format,
+        "search_results": all_search_results,
+        "analysis_results": all_analysis_results,
+        "alerts": all_alerts,
+        "report": final_report,
+        "error": "",
+    }

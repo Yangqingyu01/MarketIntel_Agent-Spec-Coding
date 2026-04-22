@@ -1,0 +1,37 @@
+.uv-cache/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+dist/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+
+# Node
+node_modules/
+web/node_modules/
+web/dist/
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Agent-local state that should not be committed
+.agents/auth*
+.agents/session*
+.agents/sessions/
+.agents/tmp/
+
+# Env
+.env
+.env.*
+!.env.example

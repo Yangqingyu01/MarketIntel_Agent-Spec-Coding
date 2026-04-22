@@ -1,0 +1,215 @@
+openapi: 3.1.0
+info:
+  title: MarketIntel API
+  version: 0.1.0
+  description: >
+    Core API contract for the MarketIntel Agent MVP, covering analysis requests,
+    alert retrieval, and competitor configuration management.
+servers:
+  - url: http://localhost:8000
+paths:
+  /api/analyze:
+    post:
+      summary: Run a market intelligence analysis task
+      operationId: runAnalysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeRequest'
+      responses:
+        '200':
+          description: Analysis completed or partially completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyzeResponse'
+  /api/alerts:
+    get:
+      summary: List recent alerts
+      operationId: listAlerts
+      responses:
+        '200':
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AlertEvent'
+                required: [alerts]
+  /api/config/competitors:
+    get:
+      summary: List monitored competitors
+      operationId: listCompetitors
+      responses:
+        '200':
+          description: Competitor config payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  competitors:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CompetitorProfile'
+                required: [competitors]
+    post:
+      summary: Add a monitored competitor
+      operationId: addCompetitor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompetitorProfile'
+      responses:
+        '200':
+          description: Competitor stored successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required: [ok]
+components:
+  schemas:
+    AnalyzeRequest:
+      type: object
+      properties:
+        targets:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        dimensions:
+          type: array
+          items:
+            type: string
+            enum: [product, pricing, funding, talent, strategy]
+        time_range:
+          type: string
+      required: [targets]
+    AnalyzeResponse:
+      type: object
+      properties:
+        task_id:
+          type: string
+        report:
+          $ref: '#/components/schemas/IntelligenceReport'
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertEvent'
+        intel_count:
+          type: integer
+          minimum: 0
+      required: [task_id, report, alerts, intel_count]
+    CompetitorProfile:
+      type: object
+      properties:
+        competitor_id:
+          type: string
+        name:
+          type: string
+        aliases:
+          type: array
+          items:
+            type: string
+        industry:
+          type: string
+        search_keywords:
+          type: array
+          items:
+            type: string
+        monitoring_frequency:
+          type: string
+          enum: [manual, daily, weekly]
+        is_active:
+          type: boolean
+      required: [name]
+    AlertAction:
+      type: object
+      properties:
+        department:
+          type: string
+        action:
+          type: string
+      required: [department, action]
+    AlertEvent:
+      type: object
+      properties:
+        alert_id:
+          type: string
+        severity:
+          type: string
+          enum: [high, medium, low]
+        company:
+          type: string
+        change_type:
+          type: string
+        dimension:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        detected_at:
+          type: string
+          format: date-time
+        recommended_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlertAction'
+      required:
+        - alert_id
+        - severity
+        - company
+        - title
+        - description
+        - detected_at
+    IntelligenceReport:
+      type: object
+      properties:
+        report_id:
+          type: string
+        report_type:
+          type: string
+        target:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        time_range_covered:
+          type: string
+        executive_summary:
+          type: string
+        dimensions_detail:
+          type: object
+          additionalProperties: true
+        changes_summary:
+          type: string
+        chart_data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        recommended_actions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        data_quality_note:
+          type: string
+      required:
+        - report_id
+        - report_type
+        - generated_at
+        - executive_summary
