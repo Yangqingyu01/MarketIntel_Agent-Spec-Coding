@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 from agents.orchestrator import run_analysis
 from config import config
-from tools.knowledge_base import load_competitors, save_competitor
+from tools.knowledge_base import list_recent_alerts, load_competitors, save_competitor
 
 
 router = APIRouter(prefix="/api")
@@ -38,7 +38,7 @@ async def analyze(req: AnalyzeRequest) -> Dict:
 
 @router.get("/alerts")
 async def get_alerts() -> Dict:
-    return {"alerts": []}
+    return {"alerts": list_recent_alerts()}
 
 
 @router.get("/config/competitors")

@@ -1,9 +1,12 @@
-"""Persistence helpers for competitor config, vector memory, and alert history."""
+"""Persistence helpers for competitor config, vector memory, snapshots, and alert history."""
 
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 try:
@@ -12,7 +15,7 @@ except Exception:  # pragma: no cover
     chromadb = None
 
 from config import config
-from tools.report_builder import current_date
+from tools.report_builder import current_date, utc_now_iso
 
 
 _client = None
@@ -28,17 +31,47 @@ def _connect_sqlite() -> sqlite3.Connection:
             alert_id TEXT PRIMARY KEY,
             company TEXT NOT NULL,
             change_type TEXT NOT NULL,
+            dimension TEXT,
+            severity TEXT,
+            title TEXT,
             description TEXT NOT NULL,
+            recommended_actions TEXT,
+            dedup_key TEXT,
+            source_url TEXT,
             detected_at TEXT NOT NULL
         )
         """
     )
+    existing_columns = {
+        row["name"]
+        for row in connection.execute("PRAGMA table_info(alert_history)").fetchall()
+    }
+    expected_columns = {
+        "dimension": "TEXT",
+        "severity": "TEXT",
+        "title": "TEXT",
+        "recommended_actions": "TEXT",
+        "dedup_key": "TEXT",
+        "source_url": "TEXT",
+    }
+    for column, column_type in expected_columns.items():
+        if column not in existing_columns:
+            connection.execute(
+                "ALTER TABLE alert_history ADD COLUMN {column} {column_type}".format(
+                    column=column,
+                    column_type=column_type,
+                )
+            )
     connection.commit()
     return connection
 
 
 def initialize_storage() -> None:
     """Ensure local persistence backends exist for first-run startup."""
+    config.vector_store_path.mkdir(parents=True, exist_ok=True)
+    config.intel_history_path.mkdir(parents=True, exist_ok=True)
+    config.config_path.parent.mkdir(parents=True, exist_ok=True)
+    config.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
     _connect_sqlite().close()
     if not config.config_path.exists():
         config.config_path.write_text(
@@ -78,7 +111,9 @@ def save_intel(intel: Dict[str, Any], raw_content: str) -> None:
     collection = _get_collection()
     if collection is None:
         return
+    record_type = intel.get("record_type", "intel")
     doc_id = (
+        f"{record_type}_"
         f"{intel.get('company', 'unknown')}_"
         f"{intel.get('dimension', 'unknown')}_"
         f"{intel.get('crawl_date', current_date())}_"
@@ -96,34 +131,72 @@ def save_intel(intel: Dict[str, Any], raw_content: str) -> None:
                 "source_url": intel.get("source_url", ""),
                 "crawl_date": intel.get("crawl_date", current_date()),
                 "extracted_data": intel.get("extracted_data", ""),
+                "record_type": record_type,
             }
         ],
     )
 
 
+def _sanitize_filename(value: str) -> str:
+    return re.sub(r'[\\/:*?"<>|]+', "_", value).strip() or "unknown"
+
+
+def _snapshot_dir() -> Path:
+    path = config.intel_history_path / "snapshots"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _serialize_snapshot_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    serialized = []
+    for item in items:
+        serialized.append(
+            {
+                "company": item.get("company", ""),
+                "dimension": item.get("dimension", "unknown"),
+                "content_type": item.get("content_type", ""),
+                "credibility": float(item.get("credibility", 0.0)),
+                "extracted_data": item.get("extracted_data", ""),
+                "evidence_quote": item.get("evidence_quote", ""),
+                "source_url": item.get("source_url", ""),
+                "source_name": item.get("source_name", ""),
+                "publish_date": item.get("publish_date", ""),
+                "crawl_date": item.get("crawl_date", current_date()),
+            }
+        )
+    return serialized
+
+
 def save_snapshot(company: str, items: List[Dict[str, Any]]) -> None:
-    """Persist a synthetic baseline snapshot document for later retrieval."""
+    """Persist a baseline snapshot to local JSON for later retrieval."""
     if not items:
         return
-    summary_lines = []
-    for item in items[:10]:
-        summary_lines.append(
-            "{dimension}: {summary}".format(
-                dimension=item.get("dimension", "unknown"),
-                summary=item.get("extracted_data", ""),
-            )
-        )
-    save_intel(
-        {
-            "company": company,
-            "dimension": "product",
-            "content_type": "fact",
-            "credibility": max(float(item.get("credibility", 0.0)) for item in items),
-            "source_url": items[0].get("source_url", ""),
-            "crawl_date": current_date(),
-            "extracted_data": " | ".join(summary_lines[:3]),
-        },
-        "\n".join(summary_lines),
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    serialized_items = _serialize_snapshot_items(items)
+    payload = {
+        "snapshot_id": "SNP-{company}-{timestamp}".format(
+            company=_sanitize_filename(company),
+            timestamp=timestamp,
+        ),
+        "company": company,
+        "snapshot_date": utc_now_iso(),
+        "baseline_status": "cold_start",
+        "dimensions": sorted(
+            {item.get("dimension", "unknown") for item in serialized_items}
+        ),
+        "overall_confidence": max(
+            float(item.get("credibility", 0.0)) for item in serialized_items
+        ),
+        "source_count": len(serialized_items),
+        "items": serialized_items,
+    }
+    snapshot_path = _snapshot_dir() / "{company}_{timestamp}.json".format(
+        company=_sanitize_filename(company),
+        timestamp=timestamp,
+    )
+    snapshot_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
 
 
@@ -148,28 +221,48 @@ def search_history(company: str, dimension: Optional[str] = None, n: int = 5) ->
 
 
 def get_latest_snapshot(company: str) -> Optional[Dict[str, Any]]:
-    results = search_history(company, n=10)
-    if not results:
-        return None
-    return sorted(
-        results,
-        key=lambda item: item["metadata"].get("crawl_date", ""),
+    snapshot_files = sorted(
+        _snapshot_dir().glob("{company}_*.json".format(company=_sanitize_filename(company))),
         reverse=True,
-    )[0]
+    )
+    if not snapshot_files:
+        return None
+    try:
+        return json.loads(snapshot_files[0].read_text(encoding="utf-8"))
+    except Exception:
+        return None
 
 
 def record_alert(alert: Dict[str, Any]) -> None:
     connection = _connect_sqlite()
     connection.execute(
         """
-        INSERT OR REPLACE INTO alert_history (alert_id, company, change_type, description, detected_at)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO alert_history (
+            alert_id,
+            company,
+            change_type,
+            dimension,
+            severity,
+            title,
+            description,
+            recommended_actions,
+            dedup_key,
+            source_url,
+            detected_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             alert.get("alert_id"),
             alert.get("company", ""),
             alert.get("change_type", ""),
+            alert.get("dimension", ""),
+            alert.get("severity", ""),
+            alert.get("title", ""),
             alert.get("description", ""),
+            json.dumps(alert.get("recommended_actions", []), ensure_ascii=False),
+            alert.get("dedup_key", ""),
+            alert.get("source_url", ""),
             alert.get("detected_at", current_date()),
         ),
     )
@@ -178,19 +271,57 @@ def record_alert(alert: Dict[str, Any]) -> None:
 
 
 def find_similar_alert(
-    company: str, change_type: str, description: str
+    company: str,
+    change_type: str,
+    dimension: str,
+    dedup_key: str,
+    days: int = 30,
 ) -> Optional[Dict[str, Any]]:
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(
+        microsecond=0
+    ).isoformat()
     connection = _connect_sqlite()
     row = connection.execute(
         """
         SELECT * FROM alert_history
-        WHERE company = ? AND change_type = ?
+        WHERE company = ? AND change_type = ? AND dimension = ? AND dedup_key = ? AND detected_at >= ?
         ORDER BY detected_at DESC
         LIMIT 1
         """,
-        (company, change_type),
+        (company, change_type, dimension, dedup_key, cutoff),
     ).fetchone()
     connection.close()
     if row is None:
         return None
-    return dict(row)
+    payload = dict(row)
+    try:
+        payload["recommended_actions"] = json.loads(
+            payload.get("recommended_actions") or "[]"
+        )
+    except Exception:
+        payload["recommended_actions"] = []
+    return payload
+
+
+def list_recent_alerts(limit: int = 20) -> List[Dict[str, Any]]:
+    connection = _connect_sqlite()
+    rows = connection.execute(
+        """
+        SELECT * FROM alert_history
+        ORDER BY detected_at DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    connection.close()
+    alerts = []
+    for row in rows:
+        payload = dict(row)
+        try:
+            payload["recommended_actions"] = json.loads(
+                payload.get("recommended_actions") or "[]"
+            )
+        except Exception:
+            payload["recommended_actions"] = []
+        alerts.append(payload)
+    return alerts

@@ -5,6 +5,7 @@ from __future__ import annotations
 import httpx
 from bs4 import BeautifulSoup
 from typing import Dict, Optional
+from urllib.parse import unquote, urlparse
 
 from config import config
 
@@ -21,12 +22,15 @@ HEADERS = {
 def fetch(url: str, timeout: Optional[int] = None) -> Dict:
     """Fetch a page and extract readable text content."""
     if url.startswith("https://example.com/"):
+        parsed = urlparse(url)
+        path_parts = [part for part in parsed.path.split("/") if part]
+        company = unquote(path_parts[0]) if path_parts else "竞品"
         content = (
             "示例公开页面\n"
             "该页面仅用于本地 smoke / integration 测试。\n"
-            "飞书 发布了新的产品与定价、招聘和战略扩张信息。\n"
+            "{company} 发布了新的产品与定价、招聘和战略扩张信息。\n"
             "2026-04-22"
-        )
+        ).format(company=company)
         return {"url": url, "content": content, "success": True, "error": ""}
 
     try:

@@ -10,6 +10,8 @@ __pycache__/
 venv/
 dist/
 *.egg-info/
+data/intel.db
+data/intel_history/snapshots/
 
 # IDE
 .idea/

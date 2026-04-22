@@ -86,16 +86,16 @@
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T026 [P] [US2] Add alert contract validation for alert payload structure in `tests/contract/test_alert_payloads.py`
-- [ ] T027 [P] [US2] Add change-detection and dedup integration coverage in `tests/integration/test_alert_dedup.py`
+- [X] T026 [P] [US2] Add alert contract validation for alert payload structure in `tests/contract/test_alert_payloads.py`
+- [X] T027 [P] [US2] Add change-detection and dedup integration coverage in `tests/integration/test_alert_dedup.py`
 
 ### Implementation for User Story 2
 
-- [ ] T028 [P] [US2] Implement change-event comparison logic in `agents/analysis_agent.py`
-- [ ] T029 [P] [US2] Implement alert grading and dedup rules in `agents/alert_agent.py`
-- [ ] T030 [US2] Extend memory persistence for alert history and snapshot retrieval in `tools/knowledge_base.py`
-- [ ] T031 [US2] Integrate alert generation into the orchestrator workflow in `agents/orchestrator.py`
-- [ ] T032 [US2] Expose recent alert retrieval in `api/routes.py`
+- [X] T028 [P] [US2] Implement change-event comparison logic in `agents/analysis_agent.py`
+- [X] T029 [P] [US2] Implement alert grading and dedup rules in `agents/alert_agent.py`
+- [X] T030 [US2] Extend memory persistence for alert history and snapshot retrieval in `tools/knowledge_base.py`
+- [X] T031 [US2] Integrate alert generation into the orchestrator workflow in `agents/orchestrator.py`
+- [X] T032 [US2] Expose recent alert retrieval in `api/routes.py`
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 

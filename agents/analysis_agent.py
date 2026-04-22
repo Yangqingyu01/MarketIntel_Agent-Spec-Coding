@@ -1,4 +1,4 @@
-"""Analysis agent for extraction, credibility scoring, and baseline lookup."""
+"""Analysis agent for extraction, credibility scoring, baseline lookup, and change detection."""
 
 from __future__ import annotations
 
@@ -52,3 +52,64 @@ def analyze_results(
 
     baseline = get_latest_snapshot(target)
     return analysis_results, baseline
+
+
+def build_change_events(
+    target: str,
+    analysis_results: List[Dict[str, Any]],
+    baseline: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
+    """Compare the current run with the latest baseline snapshot."""
+    if not baseline:
+        return []
+
+    baseline_items = baseline.get("items", []) if isinstance(baseline, dict) else []
+    baseline_signatures = {
+        (
+            item.get("dimension", "unknown"),
+            item.get("extracted_data", ""),
+        )
+        for item in baseline_items
+    }
+    baseline_dimensions = {
+        item.get("dimension", "unknown")
+        for item in baseline_items
+        if item.get("dimension")
+    }
+
+    change_events: List[Dict[str, Any]] = []
+    seen_signatures = set()
+    for item in analysis_results:
+        if float(item.get("credibility", 0.0)) < 0.40:
+            continue
+        signature = (
+            item.get("dimension", "unknown"),
+            item.get("extracted_data", ""),
+        )
+        if signature in baseline_signatures or signature in seen_signatures:
+            continue
+        seen_signatures.add(signature)
+        dimension = item.get("dimension", "unknown")
+        change_type = "updated" if dimension in baseline_dimensions else "new_signal"
+        change_events.append(
+            {
+                "change_id": "CHG-{company}-{dimension}-{index}".format(
+                    company=target,
+                    dimension=dimension,
+                    index=len(change_events) + 1,
+                ),
+                "company": target,
+                "dimension": dimension,
+                "change_type": change_type,
+                "description": "{company} 在 {dimension} 维度出现新的公开信号：{summary}".format(
+                    company=target,
+                    dimension=dimension,
+                    summary=item.get("extracted_data", ""),
+                ),
+                "severity_candidate": "high" if change_type == "updated" else "medium",
+                "credibility": float(item.get("credibility", 0.0)),
+                "source_url": item.get("source_url", ""),
+                "detected_at": item.get("crawl_date", current_date()),
+            }
+        )
+    return change_events

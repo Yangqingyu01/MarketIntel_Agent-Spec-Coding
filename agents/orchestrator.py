@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from agents.alert_agent import generate_alerts
-from agents.analysis_agent import analyze_results
+from agents.analysis_agent import analyze_results, build_change_events
 from agents.report_agent import build_report
 from agents.search_agent import run_search
 from config import config
@@ -39,6 +39,7 @@ def run_analysis(
 
     all_search_results: List[Dict[str, Any]] = []
     all_analysis_results: List[Dict[str, Any]] = []
+    all_change_events: List[Dict[str, Any]] = []
     all_alerts: List[Dict[str, Any]] = []
     reports: List[Dict[str, Any]] = []
 
@@ -49,14 +50,22 @@ def run_analysis(
 
         logger.info("[Analysis Agent] analyzing %s", target)
         analysis_results, baseline = analyze_results(target, search_results)
+        change_events = build_change_events(target, analysis_results, baseline)
         for intel in analysis_results:
             save_intel(intel, intel.get("evidence_quote", ""))
-        save_snapshot(target, analysis_results)
         all_analysis_results.extend(analysis_results)
+        all_change_events.extend(change_events)
 
         logger.info("[Alert Agent] evaluating %s", target)
-        alerts = generate_alerts(target, analysis_results, baseline)
+        alerts = generate_alerts(
+            target,
+            analysis_results,
+            baseline,
+            change_events=change_events,
+        )
         all_alerts.extend(alerts)
+
+        save_snapshot(target, analysis_results)
 
         logger.info("[Report Agent] building report for %s", target)
         reports.append(build_report(task_id, target, analysis_results, baseline))
@@ -85,6 +94,7 @@ def run_analysis(
         "output_format": output_format,
         "search_results": all_search_results,
         "analysis_results": all_analysis_results,
+        "change_events": all_change_events,
         "alerts": all_alerts,
         "report": final_report,
         "error": "",
