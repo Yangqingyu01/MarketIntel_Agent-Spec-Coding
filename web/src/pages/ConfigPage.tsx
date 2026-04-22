@@ -1,8 +1,13 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
+import type { AppLanguage } from "../pages/DashboardPage";
 import { fetchCompetitors, saveCompetitor } from "../services/api";
 
-export function ConfigPage() {
+type ConfigPageProps = {
+  language: AppLanguage;
+};
+
+export function ConfigPage({ language }: ConfigPageProps) {
   const [name, setName] = useState("");
   const [items, setItems] = useState<Array<Record<string, unknown>>>([]);
   const [saving, setSaving] = useState(false);
@@ -16,10 +21,45 @@ export function ConfigPage() {
     loadItems().catch(() => setItems([]));
   }, []);
 
+  const copy = useMemo(() => {
+    if (language === "zh") {
+      return {
+        label: "配置 / 注册",
+        title: "配置目标",
+        activeSet: "启用集合",
+        helper:
+          "把竞品登记到监测索引中，这样同一份目标列表就可以复用于定时扫描、飞书推送和横向对比。",
+        placeholder: "输入竞品名称",
+        saving: "保存中",
+        add: "添加竞品",
+        emptyTitle: "监测列表为空",
+        emptyBody: "先添加第一个目标，建立竞品监测集合。",
+        company: "公司",
+        cardBody: "已写入监测注册表，可直接用于后续扫描。",
+      };
+    }
+
+    return {
+      label: "Registry / Config",
+      title: "Configure Targets",
+      activeSet: "Active Set",
+      helper:
+        "Register companies in the monitoring index so the same watch list can be reused across scheduled scans, Feishu delivery, and side-by-side comparison.",
+      placeholder: "Enter a competitor name",
+      saving: "Saving",
+      add: "Add Competitor",
+      emptyTitle: "Watch List Empty",
+      emptyBody: "Add the first target to establish the competitive monitoring set.",
+      company: "Company",
+      cardBody: "Saved in the monitoring registry and ready for recurring scans.",
+    };
+  }, [language]);
+
   async function handleSave() {
     if (!name.trim()) {
       return;
     }
+
     setSaving(true);
     try {
       await saveCompetitor({
@@ -37,120 +77,63 @@ export function ConfigPage() {
   }
 
   return (
-    <section style={containerStyle}>
-      <div style={headerStyle}>
+    <section className="bau-panel bau-panel--yellow">
+      <div className="bau-panel__header">
         <div>
-          <p style={tagStyle}>Config Center</p>
-          <h2 style={{ marginTop: 0, marginBottom: "8px" }}>竞品配置中心</h2>
-          <p style={hintStyle}>维护日常监测对象，供调度任务和手动分析复用。</p>
+          <p className="bau-label">{copy.label}</p>
+          <h2 className="bau-panel__title">{copy.title}</h2>
         </div>
-        <div style={countCardStyle}>
-          <span style={countLabelStyle}>已配置</span>
-          <strong>{items.length}</strong>
+        <span className="bau-pill bau-pill--white">
+          {copy.activeSet} / {items.length}
+        </span>
+      </div>
+
+      <div className="bau-config-grid">
+        <div className="bau-config-form">
+          <p className="bau-helper">{copy.helper}</p>
+
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder={copy.placeholder}
+            className="bau-field"
+          />
+
+          <button
+            type="button"
+            className="bau-button bau-button--red"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? copy.saving : copy.add}
+          </button>
         </div>
-      </div>
-      <div style={formStyle}>
-        <input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="输入竞品名称"
-          style={inputStyle}
-        />
-        <button type="button" onClick={handleSave} style={buttonStyle} disabled={saving}>
-          {saving ? "保存中..." : "添加竞品"}
-        </button>
-      </div>
-      <div style={listStyle}>
-        {items.map((item, index) => (
-          <div key={`${String(item.name ?? "competitor")}-${index}`} style={itemStyle}>
-            <strong>{String(item.name ?? "未命名")}</strong>
-            <span>{String(item.monitoring_frequency ?? "manual")}</span>
-          </div>
-        ))}
+
+        <div className="bau-config-list">
+          {items.length === 0 ? (
+            <div className="bau-config-card">
+              <h3 className="bau-config-card__title">{copy.emptyTitle}</h3>
+              <p className="bau-config-card__text">{copy.emptyBody}</p>
+            </div>
+          ) : null}
+
+          {items.map((item, index) => (
+            <article
+              key={`${String(item.name ?? "competitor")}-${index}`}
+              className="bau-config-card"
+            >
+              <div className="bau-config-card__meta">
+                <span className="bau-meta">{copy.company}</span>
+                <span className="bau-pill bau-pill--blue">
+                  {String(item.monitoring_frequency ?? "manual").toUpperCase()}
+                </span>
+              </div>
+              <h3 className="bau-config-card__title">{String(item.name ?? "Untitled")}</h3>
+              <p className="bau-config-card__text">{copy.cardBody}</p>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
-
-const containerStyle: CSSProperties = {
-  padding: "24px",
-  borderRadius: "24px",
-  background:
-    "linear-gradient(160deg, rgba(29,111,66,0.10), transparent 28%), #f8f5f0",
-};
-
-const headerStyle: CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "flex-start",
-  gap: "16px",
-  flexWrap: "wrap",
-};
-
-const tagStyle: CSSProperties = {
-  margin: "0 0 6px",
-  color: "#1d6f42",
-  fontSize: "12px",
-  textTransform: "uppercase",
-  letterSpacing: "0.12em",
-};
-
-const hintStyle: CSSProperties = {
-  margin: 0,
-  color: "#5b5f6b",
-};
-
-const countCardStyle: CSSProperties = {
-  minWidth: "96px",
-  padding: "12px 14px",
-  borderRadius: "16px",
-  background: "#fff",
-  color: "#1d6f42",
-};
-
-const countLabelStyle: CSSProperties = {
-  display: "block",
-  marginBottom: "4px",
-  fontSize: "12px",
-  color: "#667085",
-};
-
-const formStyle: CSSProperties = {
-  display: "flex",
-  gap: "12px",
-  marginTop: "18px",
-  marginBottom: "20px",
-  flexWrap: "wrap",
-};
-
-const inputStyle: CSSProperties = {
-  flex: 1,
-  minWidth: "220px",
-  padding: "12px 14px",
-  borderRadius: "14px",
-  border: "1px solid #d0c4b6",
-  background: "#fff",
-};
-
-const buttonStyle: CSSProperties = {
-  border: "none",
-  borderRadius: "14px",
-  padding: "12px 16px",
-  background: "#1d6f42",
-  color: "#fff",
-  cursor: "pointer",
-  fontWeight: 700,
-};
-
-const listStyle: CSSProperties = {
-  display: "grid",
-  gap: "12px",
-};
-
-const itemStyle: CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  padding: "14px 16px",
-  borderRadius: "16px",
-  background: "#fff",
-};

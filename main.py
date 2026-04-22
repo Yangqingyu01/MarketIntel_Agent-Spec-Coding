@@ -7,8 +7,10 @@ from typing import Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.auth_routes import router as auth_router
 from api.feishu_routes import router as feishu_router
 from api.routes import router as api_router
+from auth.service import initialize_auth_storage
 from scheduler.runner import describe_scheduler
 from tools.knowledge_base import initialize_storage
 
@@ -23,11 +25,13 @@ app.add_middleware(
 )
 app.include_router(api_router)
 app.include_router(feishu_router)
+app.include_router(auth_router)
 
 
 @app.on_event("startup")
 async def startup() -> None:
     initialize_storage()
+    initialize_auth_storage()
 
 
 @app.get("/health")

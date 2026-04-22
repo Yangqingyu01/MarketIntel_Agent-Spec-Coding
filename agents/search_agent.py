@@ -5,8 +5,10 @@ from __future__ import annotations
 from datetime import date
 from typing import Dict, Iterable, List, Tuple
 
+from config import config
 from tools.web_fetcher import fetch
 from tools.web_search import search
+from tools.report_builder import degradation_note
 
 
 DIMENSION_QUERY_TEMPLATES = {
@@ -22,7 +24,8 @@ def build_queries(company: str, dimensions: Iterable[str]) -> List[Tuple[str, st
     year = str(date.today().year)
     queries: List[Tuple[str, str]] = []
     for dimension in dimensions:
-        for template in DIMENSION_QUERY_TEMPLATES.get(dimension, []):
+        templates = DIMENSION_QUERY_TEMPLATES.get(dimension, [])
+        for template in templates[: config.max_queries_per_dimension]:
             queries.append((dimension, template.format(company=company, year=year)))
     return queries
 
@@ -30,9 +33,25 @@ def build_queries(company: str, dimensions: Iterable[str]) -> List[Tuple[str, st
 def run_search(target: str, dimensions: List[str], time_range: str) -> List[Dict]:
     """Search and optionally fetch high-value sources."""
     collected: List[Dict] = []
+    fetched_documents = 0
     for dimension, query in build_queries(target, dimensions):
-        for item in search(query, num=3):
-            fetched = fetch(item["url"])
+        for item in search(query, num=config.search_results_per_query):
+            if fetched_documents < config.max_fetch_documents_per_target:
+                fetched = fetch(item["url"])
+                fetched_documents += 1
+            else:
+                fetched = {
+                    "url": item.get("url", ""),
+                    "content": "",
+                    "success": False,
+                    "error": "fetch_budget_exhausted",
+                    "fallback_used": True,
+                    "degradation_note": degradation_note(
+                        "已达到单次分析抓取预算，后续结果仅使用搜索摘要以控制时延",
+                        "中",
+                    ),
+                    "compliance_note": "",
+                }
             content = fetched["content"] if fetched["success"] else item.get("snippet", "")
             degradation_messages = []
             if item.get("degradation_note"):

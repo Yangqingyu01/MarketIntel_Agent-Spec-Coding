@@ -32,6 +32,7 @@ def generate_alerts(
     analysis_results: List[Dict[str, Any]],
     baseline: Optional[Dict[str, Any]] = None,
     change_events: Optional[List[Dict[str, Any]]] = None,
+    organization_id: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
     """Generate graded alerts while suppressing recent duplicates."""
     del analysis_results
@@ -44,6 +45,7 @@ def generate_alerts(
             change_type=change.get("change_type", ""),
             dimension=change.get("dimension", ""),
             dedup_key=dedup_key,
+            organization_id=organization_id,
         )
         if duplicate:
             continue
@@ -55,6 +57,7 @@ def generate_alerts(
                 index=len(alerts) + 1,
             ),
             "company": target,
+            "organization_id": organization_id or "public",
             "change_type": change.get("change_type", ""),
             "dimension": change.get("dimension", ""),
             "severity": severity,
@@ -74,6 +77,6 @@ def generate_alerts(
             "dedup_key": dedup_key,
             "source_url": change.get("source_url", ""),
         }
-        record_alert(alert)
+        record_alert(alert, organization_id=organization_id)
         alerts.append(alert)
     return alerts

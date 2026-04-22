@@ -58,6 +58,7 @@ def run_analysis(
     dimensions: Optional[List[str]] = None,
     time_range: Optional[str] = None,
     output_format: str = "web",
+    organization_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Run the MVP analysis chain."""
     dimensions = dimensions or list(config.default_dimensions)
@@ -77,7 +78,11 @@ def run_analysis(
         all_search_results.extend(search_results)
 
         logger.info("[Analysis Agent] analyzing %s", target)
-        analysis_results, baseline = analyze_results(target, search_results)
+        analysis_results, baseline = analyze_results(
+            target,
+            search_results,
+            organization_id=organization_id,
+        )
         change_events = build_change_events(target, analysis_results, baseline)
         for intel in analysis_results:
             save_intel(intel, intel.get("evidence_quote", ""))
@@ -90,10 +95,11 @@ def run_analysis(
             analysis_results,
             baseline,
             change_events=change_events,
+            organization_id=organization_id,
         )
         all_alerts.extend(alerts)
 
-        save_snapshot(target, analysis_results)
+        save_snapshot(target, analysis_results, organization_id=organization_id)
 
         logger.info("[Report Agent] building report for %s", target)
         report = build_report(

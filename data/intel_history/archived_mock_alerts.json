@@ -1,0 +1,15 @@
+[
+  {
+    "alert_id": "ALT-Feishu-1",
+    "company": "Feishu",
+    "change_type": "updated",
+    "dimension": "pricing",
+    "severity": "high",
+    "title": "Feishu pricing 变化预警",
+    "description": "Feishu 在 pricing 维度出现新的公开信号：示例公开页面",
+    "recommended_actions": "[{\"department\": \"strategy\", \"action\": \"复核该变化并确认是否需要追加监测或人工研判。\"}]",
+    "dedup_key": "feishu|pricing|updated|feishu 在 pricing 维度出现新的公开信号：示例公开页面",
+    "source_url": "https://example.com/Feishu/product-update",
+    "detected_at": "2026-04-22T14:57:27+00:00"
+  }
+]

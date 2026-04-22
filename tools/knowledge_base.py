@@ -29,6 +29,7 @@ def _connect_sqlite() -> sqlite3.Connection:
         """
         CREATE TABLE IF NOT EXISTS alert_history (
             alert_id TEXT PRIMARY KEY,
+            organization_id TEXT,
             company TEXT NOT NULL,
             change_type TEXT NOT NULL,
             dimension TEXT,
@@ -47,6 +48,7 @@ def _connect_sqlite() -> sqlite3.Connection:
         for row in connection.execute("PRAGMA table_info(alert_history)").fetchall()
     }
     expected_columns = {
+        "organization_id": "TEXT",
         "dimension": "TEXT",
         "severity": "TEXT",
         "title": "TEXT",
@@ -78,6 +80,7 @@ def initialize_storage() -> None:
             json.dumps({"competitors": []}, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+    cleanup_mock_history()
 
 
 def _get_collection():
@@ -91,20 +94,90 @@ def _get_collection():
 
 
 def load_competitors() -> Dict[str, Any]:
+    return load_competitors_for_organization()
+
+
+def _load_competitor_registry() -> Dict[str, Any]:
     initialize_storage()
     if not config.config_path.exists():
         return {"competitors": []}
-    return json.loads(config.config_path.read_text(encoding="utf-8"))
+    payload = json.loads(config.config_path.read_text(encoding="utf-8"))
+    return payload if isinstance(payload, dict) else {"competitors": []}
 
 
-def save_competitor(competitor: Dict[str, Any]) -> Dict[str, Any]:
-    payload = load_competitors()
-    payload.setdefault("competitors", []).append(competitor)
+def _write_competitor_registry(payload: Dict[str, Any]) -> None:
     config.config_path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
-    return payload
+
+
+def load_competitors_for_organization(
+    organization_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    payload = _load_competitor_registry()
+    if not organization_id:
+        if "organizations" not in payload:
+            return payload
+        competitors = payload.get("organizations", {}).get("public", {}).get("competitors", [])
+        return {"competitors": competitors}
+
+    if "organizations" not in payload:
+        return {
+            "organization_id": organization_id,
+            "competitors": payload.get("competitors", []),
+        }
+
+    organization_entry = payload.get("organizations", {}).get(organization_id, {})
+    return {
+        "organization_id": organization_id,
+        "competitors": organization_entry.get("competitors", []),
+    }
+
+
+def save_competitor(
+    competitor: Dict[str, Any],
+    organization_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    payload = _load_competitor_registry()
+    if not organization_id and "organizations" not in payload:
+        payload.setdefault("competitors", []).append(competitor)
+        _write_competitor_registry(payload)
+        return payload
+
+    normalized_org = organization_id or "public"
+
+    if "organizations" not in payload:
+        payload = {
+            "organizations": {
+                normalized_org: {
+                    "organization_id": normalized_org,
+                    "competitors": payload.get("competitors", []),
+                }
+            }
+        }
+
+    payload.setdefault("organizations", {}).setdefault(
+        normalized_org,
+        {"organization_id": normalized_org, "competitors": []},
+    )
+    payload["organizations"][normalized_org].setdefault("competitors", []).append(competitor)
+    _write_competitor_registry(payload)
+    return {
+        "organization_id": normalized_org,
+        "competitors": payload["organizations"][normalized_org]["competitors"],
+    }
+
+
+def list_competitor_organization_ids() -> List[str]:
+    payload = _load_competitor_registry()
+    if "organizations" not in payload:
+        return ["public"] if payload.get("competitors") else []
+    return [
+        organization_id
+        for organization_id, entry in payload.get("organizations", {}).items()
+        if entry.get("competitors")
+    ]
 
 
 def save_intel(intel: Dict[str, Any], raw_content: str) -> None:
@@ -147,6 +220,90 @@ def _snapshot_dir() -> Path:
     return path
 
 
+def _archive_snapshot_dir() -> Path:
+    path = config.intel_history_path / "archived_mock_snapshots"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _archive_alerts_path() -> Path:
+    return config.intel_history_path / "archived_mock_alerts.json"
+
+
+def _is_mock_source_url(source_url: str) -> bool:
+    normalized = (source_url or "").strip().lower()
+    if not normalized:
+        return False
+    return (
+        "example.com" in normalized
+        or "mock" in normalized
+        or "mock_public_source" in normalized
+    )
+
+
+def _is_mock_snapshot_payload(payload: Dict[str, Any]) -> bool:
+    items = payload.get("items", [])
+    if not items:
+        return False
+    return any(_is_mock_source_url(str(item.get("source_url", ""))) for item in items)
+
+
+def cleanup_mock_history() -> None:
+    for snapshot_path in _snapshot_dir().glob("*.json"):
+        try:
+            payload = json.loads(snapshot_path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not _is_mock_snapshot_payload(payload):
+            continue
+        snapshot_path.replace(_archive_snapshot_dir() / snapshot_path.name)
+
+    connection = _connect_sqlite()
+    rows = connection.execute(
+        """
+        SELECT * FROM alert_history
+        ORDER BY detected_at DESC
+        """
+    ).fetchall()
+    archived_alerts = []
+    for row in rows:
+        payload = dict(row)
+        if not _is_mock_source_url(payload.get("source_url", "")):
+            continue
+        try:
+            payload["recommended_actions"] = json.loads(
+                payload.get("recommended_actions") or "[]"
+            )
+        except Exception:
+            payload["recommended_actions"] = []
+        archived_alerts.append(payload)
+
+    if archived_alerts:
+        archive_path = _archive_alerts_path()
+        try:
+            existing = json.loads(archive_path.read_text(encoding="utf-8"))
+            if not isinstance(existing, list):
+                existing = []
+        except Exception:
+            existing = []
+        deduped: Dict[str, Dict[str, Any]] = {
+            str(item.get("alert_id", "")): item for item in existing if item.get("alert_id")
+        }
+        for item in archived_alerts:
+            deduped[str(item.get("alert_id", ""))] = item
+        archive_path.write_text(
+            json.dumps(list(deduped.values()), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        connection.executemany(
+            "DELETE FROM alert_history WHERE alert_id = ?",
+            [(item.get("alert_id", ""),) for item in archived_alerts],
+        )
+        connection.commit()
+
+    connection.close()
+
+
 def _serialize_snapshot_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     serialized = []
     for item in items:
@@ -167,7 +324,11 @@ def _serialize_snapshot_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any
     return serialized
 
 
-def save_snapshot(company: str, items: List[Dict[str, Any]]) -> None:
+def save_snapshot(
+    company: str,
+    items: List[Dict[str, Any]],
+    organization_id: Optional[str] = None,
+) -> None:
     """Persist a baseline snapshot to local JSON for later retrieval."""
     if not items:
         return
@@ -178,6 +339,7 @@ def save_snapshot(company: str, items: List[Dict[str, Any]]) -> None:
             company=_sanitize_filename(company),
             timestamp=timestamp,
         ),
+        "organization_id": organization_id or "public",
         "company": company,
         "snapshot_date": utc_now_iso(),
         "baseline_status": "cold_start",
@@ -190,7 +352,8 @@ def save_snapshot(company: str, items: List[Dict[str, Any]]) -> None:
         "source_count": len(serialized_items),
         "items": serialized_items,
     }
-    snapshot_path = _snapshot_dir() / "{company}_{timestamp}.json".format(
+    snapshot_path = _snapshot_dir() / "{organization}_{company}_{timestamp}.json".format(
+        organization=_sanitize_filename(organization_id or "public"),
         company=_sanitize_filename(company),
         timestamp=timestamp,
     )
@@ -220,25 +383,58 @@ def search_history(company: str, dimension: Optional[str] = None, n: int = 5) ->
     return [{"content": doc, "metadata": meta} for doc, meta in zip(docs, metas)]
 
 
-def get_latest_snapshot(company: str) -> Optional[Dict[str, Any]]:
-    snapshot_files = sorted(
-        _snapshot_dir().glob("{company}_*.json".format(company=_sanitize_filename(company))),
-        reverse=True,
-    )
+def list_snapshots(
+    company: Optional[str] = None,
+    limit: int = 10,
+    real_only: bool = True,
+    organization_id: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    snapshot_files = sorted(_snapshot_dir().glob("*.json"), reverse=True)
+    snapshots: List[Dict[str, Any]] = []
+    for path in snapshot_files:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if company and payload.get("company") != company:
+            continue
+        if organization_id and payload.get("organization_id", "public") != organization_id:
+            continue
+        if real_only and _is_mock_snapshot_payload(payload):
+            continue
+        snapshots.append(payload)
+        if len(snapshots) >= limit:
+            break
+    return snapshots
+
+
+def get_latest_snapshot(
+    company: str,
+    organization_id: Optional[str] = None,
+) -> Optional[Dict[str, Any]]:
+    snapshot_files = sorted(_snapshot_dir().glob("*.json"), reverse=True)
     if not snapshot_files:
         return None
-    try:
-        return json.loads(snapshot_files[0].read_text(encoding="utf-8"))
-    except Exception:
-        return None
+    for snapshot_file in snapshot_files:
+        try:
+            payload = json.loads(snapshot_file.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if payload.get("company") != company:
+            continue
+        if organization_id and payload.get("organization_id", "public") != organization_id:
+            continue
+        return payload
+    return None
 
 
-def record_alert(alert: Dict[str, Any]) -> None:
+def record_alert(alert: Dict[str, Any], organization_id: Optional[str] = None) -> None:
     connection = _connect_sqlite()
     connection.execute(
         """
         INSERT OR REPLACE INTO alert_history (
             alert_id,
+            organization_id,
             company,
             change_type,
             dimension,
@@ -250,10 +446,11 @@ def record_alert(alert: Dict[str, Any]) -> None:
             source_url,
             detected_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             alert.get("alert_id"),
+            organization_id or alert.get("organization_id", "public"),
             alert.get("company", ""),
             alert.get("change_type", ""),
             alert.get("dimension", ""),
@@ -276,6 +473,7 @@ def find_similar_alert(
     dimension: str,
     dedup_key: str,
     days: int = 30,
+    organization_id: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).replace(
         microsecond=0
@@ -284,11 +482,11 @@ def find_similar_alert(
     row = connection.execute(
         """
         SELECT * FROM alert_history
-        WHERE company = ? AND change_type = ? AND dimension = ? AND dedup_key = ? AND detected_at >= ?
+        WHERE organization_id = ? AND company = ? AND change_type = ? AND dimension = ? AND dedup_key = ? AND detected_at >= ?
         ORDER BY detected_at DESC
         LIMIT 1
         """,
-        (company, change_type, dimension, dedup_key, cutoff),
+        (organization_id or "public", company, change_type, dimension, dedup_key, cutoff),
     ).fetchone()
     connection.close()
     if row is None:
@@ -303,20 +501,40 @@ def find_similar_alert(
     return payload
 
 
-def list_recent_alerts(limit: int = 20) -> List[Dict[str, Any]]:
+def list_recent_alerts(
+    limit: int = 20,
+    company: Optional[str] = None,
+    real_only: bool = True,
+    organization_id: Optional[str] = None,
+) -> List[Dict[str, Any]]:
     connection = _connect_sqlite()
-    rows = connection.execute(
-        """
-        SELECT * FROM alert_history
-        ORDER BY detected_at DESC
-        LIMIT ?
-        """,
-        (limit,),
-    ).fetchall()
+    query_limit = limit * 5 if real_only else limit
+    if company:
+        rows = connection.execute(
+            """
+            SELECT * FROM alert_history
+            WHERE organization_id = ? AND company = ?
+            ORDER BY detected_at DESC
+            LIMIT ?
+            """,
+            (organization_id or "public", company, query_limit),
+        ).fetchall()
+    else:
+        rows = connection.execute(
+            """
+            SELECT * FROM alert_history
+            WHERE organization_id = ?
+            ORDER BY detected_at DESC
+            LIMIT ?
+            """,
+            (organization_id or "public", query_limit),
+        ).fetchall()
     connection.close()
     alerts = []
     for row in rows:
         payload = dict(row)
+        if real_only and _is_mock_source_url(payload.get("source_url", "")):
+            continue
         try:
             payload["recommended_actions"] = json.loads(
                 payload.get("recommended_actions") or "[]"
@@ -324,4 +542,6 @@ def list_recent_alerts(limit: int = 20) -> List[Dict[str, Any]]:
         except Exception:
             payload["recommended_actions"] = []
         alerts.append(payload)
+        if len(alerts) >= limit:
+            break
     return alerts

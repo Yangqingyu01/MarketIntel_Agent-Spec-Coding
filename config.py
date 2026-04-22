@@ -30,6 +30,9 @@ class AppConfig:
     llm_model_strong: str = field(
         default_factory=lambda: os.getenv("LLM_MODEL_STRONG", "gpt-4o")
     )
+    use_llm_extraction: bool = field(
+        default_factory=lambda: os.getenv("USE_LLM_EXTRACTION", "false").lower() == "true"
+    )
 
     embedding_api_key: str = field(
         default_factory=lambda: _fallback_env("EMBEDDING_API_KEY", "LLM_API_KEY")
@@ -65,19 +68,36 @@ class AppConfig:
         default_factory=lambda: os.getenv("FEISHU_TARGET_CHAT_ID", "")
     )
 
+    auth_secret_key: str = field(
+        default_factory=lambda: os.getenv(
+            "AUTH_SECRET_KEY",
+            "marketintel-demo-secret-key",
+        )
+    )
+    auth_token_ttl_hours: int = field(
+        default_factory=lambda: int(os.getenv("AUTH_TOKEN_TTL_HOURS", "72"))
+    )
+
+    max_queries_per_dimension: int = field(
+        default_factory=lambda: int(os.getenv("MAX_QUERIES_PER_DIMENSION", "1"))
+    )
+    search_results_per_query: int = field(
+        default_factory=lambda: int(os.getenv("SEARCH_RESULTS_PER_QUERY", "2"))
+    )
+    max_fetch_documents_per_target: int = field(
+        default_factory=lambda: int(os.getenv("MAX_FETCH_DOCUMENTS_PER_TARGET", "6"))
+    )
+
     analysis_timeout_seconds: int = field(
         default_factory=lambda: int(os.getenv("ANALYSIS_TIMEOUT_SECONDS", "90"))
     )
     fetch_timeout_seconds: int = field(
-        default_factory=lambda: int(os.getenv("FETCH_TIMEOUT_SECONDS", "10"))
+        default_factory=lambda: int(os.getenv("FETCH_TIMEOUT_SECONDS", "6"))
     )
     default_time_range: str = "近3个月"
     default_dimensions: Tuple[str, ...] = (
         "product",
         "pricing",
-        "funding",
-        "talent",
-        "strategy",
     )
 
     def ensure_directories(self) -> None:

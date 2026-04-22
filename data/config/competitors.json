@@ -1,3 +1,32 @@
 {
-  "competitors": []
+  "organizations": {
+    "public": {
+      "organization_id": "public",
+      "competitors": []
+    },
+    "org_099fa35fbc21c0ae": {
+      "organization_id": "org_099fa35fbc21c0ae",
+      "competitors": [
+        {
+          "name": "Feishu",
+          "monitoring_frequency": "daily",
+          "is_active": true,
+          "aliases": [],
+          "search_keywords": []
+        }
+      ]
+    },
+    "org_624e05b710cd5a0c": {
+      "organization_id": "org_624e05b710cd5a0c",
+      "competitors": [
+        {
+          "name": "Feishu",
+          "monitoring_frequency": "daily",
+          "is_active": true,
+          "aliases": [],
+          "search_keywords": []
+        }
+      ]
+    }
+  }
 }

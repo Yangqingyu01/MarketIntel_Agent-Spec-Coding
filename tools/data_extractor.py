@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Set
 
 from config import config, llm_client
 
 
-EXTRACT_PROMPT = """你是一名专业情报分析师。请从以下文章中提取关于「{company}」的结构化情报。
-
-文章内容：
-{content}
+EXTRACT_PROMPT = """你是一名专业情报分析师。请从以下文章中提取关于“{company}”的结构化情报。
+文章内容：{content}
 
 请严格输出 JSON，字段如下：
 {{
@@ -30,8 +28,29 @@ EXTRACT_PROMPT = """你是一名专业情报分析师。请从以下文章中提
   }}
 }}
 
-如果文章与该公司无关，请输出 {{"skip": true}}。
-"""
+如果文章与该公司无关，请输出 {{"skip": true}}。"""
+
+
+COMPANY_ALIASES = {
+    "feishu": {"feishu", "飞书", "lark"},
+    "飞书": {"飞书", "feishu", "lark"},
+    "lark": {"lark", "feishu", "飞书"},
+    "dingtalk": {"dingtalk", "钉钉"},
+    "钉钉": {"钉钉", "dingtalk"},
+    "wecom": {"wecom", "企业微信", "wechat work"},
+    "企业微信": {"企业微信", "wecom", "wechat work"},
+}
+
+
+def _normalize_company_name(value: str) -> str:
+    return re.sub(r"[\s\-_]+", "", value).casefold()
+
+
+def _company_candidates(company: str) -> Set[str]:
+    normalized = _normalize_company_name(company)
+    aliases = set(COMPANY_ALIASES.get(normalized, set()))
+    aliases.add(company)
+    return {_normalize_company_name(alias) for alias in aliases if alias}
 
 
 def _infer_dimension(content: str) -> str:
@@ -52,8 +71,10 @@ def _extract_dates(content: str) -> list[str]:
 
 
 def _heuristic_extract(content: str, company: str) -> Optional[Dict[str, Any]]:
-    if company not in content:
+    normalized_content = _normalize_company_name(content)
+    if not any(alias in normalized_content for alias in _company_candidates(company)):
         return None
+
     lines = [line.strip() for line in content.splitlines() if line.strip()]
     excerpt = lines[0][:100] if lines else content[:100]
     return {
@@ -77,7 +98,7 @@ def extract_intel(content: str, company: str) -> Optional[Dict[str, Any]]:
     if not content.strip():
         return None
 
-    if not config.llm_api_key:
+    if not config.llm_api_key or not config.use_llm_extraction:
         return _heuristic_extract(content, company)
 
     prompt = EXTRACT_PROMPT.format(company=company, content=content[:4000])

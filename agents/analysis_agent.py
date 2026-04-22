@@ -26,7 +26,9 @@ def score_item(item: Dict[str, Any], extracted: Dict[str, Any]) -> float:
 
 
 def analyze_results(
-    target: str, search_results: List[Dict[str, Any]]
+    target: str,
+    search_results: List[Dict[str, Any]],
+    organization_id: Optional[str] = None,
 ) -> Tuple[List[Dict[str, Any]], Optional[Dict[str, Any]]]:
     analysis_results: List[Dict[str, Any]] = []
     seen_signatures = set()
@@ -54,7 +56,7 @@ def analyze_results(
         extracted["compliance_note"] = item.get("compliance_note", "")
         analysis_results.append(extracted)
 
-    baseline = get_latest_snapshot(target)
+    baseline = get_latest_snapshot(target, organization_id=organization_id)
     return analysis_results, baseline
 
 
