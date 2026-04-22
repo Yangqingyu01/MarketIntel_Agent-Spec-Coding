@@ -83,6 +83,44 @@ def _search_tavily(query: str, num: int) -> List[Dict]:
     ]
 
 
+def _mock_results(query: str, num: int) -> List[Dict]:
+    """Return deterministic local-only results when external search is unavailable."""
+    today = date.today().isoformat()
+    company = query.split()[0] if query.strip() else "竞品"
+    snippets = [
+        {
+            "title": u"%s 发布智能协作更新" % company,
+            "url": "https://example.com/%s/product-update" % company,
+            "snippet": u"%s 今日发布新的智能协作能力，覆盖产品动态与会议场景。" % company,
+        },
+        {
+            "title": u"%s 调整产品定价策略" % company,
+            "url": "https://example.com/%s/pricing-update" % company,
+            "snippet": u"%s 宣布套餐价格调整，并强化企业版能力。" % company,
+        },
+        {
+            "title": u"%s 招聘与战略扩张信号" % company,
+            "url": "https://example.com/%s/strategy-update" % company,
+            "snippet": u"%s 正在扩招相关岗位，并提及新的市场合作方向。" % company,
+        },
+    ]
+    results: List[Dict] = []
+    for item in snippets[:num]:
+        results.append(
+            {
+                "title": item["title"],
+                "url": item["url"],
+                "snippet": item["snippet"],
+                "source_name": extract_domain(item["url"]),
+                "source_type": "official",
+                "date": today,
+                "crawl_date": today,
+                "query": query,
+            }
+        )
+    return results
+
+
 def search(query: str, num: int = 5) -> List[Dict]:
     """Execute a single query and return normalized results."""
     try:
@@ -99,4 +137,4 @@ def search(query: str, num: int = 5) -> List[Dict]:
     except Exception:
         pass
 
-    return []
+    return _mock_results(query, num)

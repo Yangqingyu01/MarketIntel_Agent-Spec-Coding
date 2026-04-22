@@ -14,3 +14,5 @@ def test_analyze_api_returns_contract_shape() -> None:
     assert response.status_code == 200
     payload = response.json()
     assert {"task_id", "report", "alerts", "intel_count"} <= set(payload)
+    assert payload["report"]["report_type"] == "single"
+    assert payload["intel_count"] >= 1

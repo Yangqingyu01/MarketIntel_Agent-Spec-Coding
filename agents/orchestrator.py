@@ -10,7 +10,7 @@ from agents.analysis_agent import analyze_results
 from agents.report_agent import build_report
 from agents.search_agent import run_search
 from config import config
-from tools.knowledge_base import save_intel
+from tools.knowledge_base import save_intel, save_snapshot
 from tools.report_builder import get_logger
 
 
@@ -51,6 +51,7 @@ def run_analysis(
         analysis_results, baseline = analyze_results(target, search_results)
         for intel in analysis_results:
             save_intel(intel, intel.get("evidence_quote", ""))
+        save_snapshot(target, analysis_results)
         all_analysis_results.extend(analysis_results)
 
         logger.info("[Alert Agent] evaluating %s", target)

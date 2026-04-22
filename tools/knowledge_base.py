@@ -101,6 +101,32 @@ def save_intel(intel: Dict[str, Any], raw_content: str) -> None:
     )
 
 
+def save_snapshot(company: str, items: List[Dict[str, Any]]) -> None:
+    """Persist a synthetic baseline snapshot document for later retrieval."""
+    if not items:
+        return
+    summary_lines = []
+    for item in items[:10]:
+        summary_lines.append(
+            "{dimension}: {summary}".format(
+                dimension=item.get("dimension", "unknown"),
+                summary=item.get("extracted_data", ""),
+            )
+        )
+    save_intel(
+        {
+            "company": company,
+            "dimension": "product",
+            "content_type": "fact",
+            "credibility": max(float(item.get("credibility", 0.0)) for item in items),
+            "source_url": items[0].get("source_url", ""),
+            "crawl_date": current_date(),
+            "extracted_data": " | ".join(summary_lines[:3]),
+        },
+        "\n".join(summary_lines),
+    )
+
+
 def search_history(company: str, dimension: Optional[str] = None, n: int = 5) -> List[Dict]:
     collection = _get_collection()
     if collection is None:

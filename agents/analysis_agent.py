@@ -29,10 +29,19 @@ def analyze_results(
     target: str, search_results: List[Dict[str, Any]]
 ) -> Tuple[List[Dict[str, Any]], Optional[Dict[str, Any]]]:
     analysis_results: List[Dict[str, Any]] = []
+    seen_signatures = set()
     for item in search_results:
         extracted = extract_intel(item.get("content", ""), target)
         if not extracted:
             continue
+        signature = (
+            extracted.get("dimension", ""),
+            extracted.get("extracted_data", ""),
+            item.get("url", ""),
+        )
+        if signature in seen_signatures:
+            continue
+        seen_signatures.add(signature)
         extracted["credibility"] = score_item(item, extracted)
         extracted["source_url"] = item.get("url", "")
         extracted["source_name"] = item.get("source_name", "")

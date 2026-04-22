@@ -37,13 +37,13 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Implement shared application configuration and client factories in `config.py`
-- [ ] T007 [P] Implement source metadata and content-type schemas in `agents/state.py`
-- [ ] T008 [P] Implement competitor configuration persistence in `data/config/competitors.json` and `tools/knowledge_base.py`
-- [ ] T009 Implement vector memory and baseline repository utilities in `tools/knowledge_base.py`
-- [ ] T010 [P] Implement common logging, timeout, and graceful-degradation helpers in `tools/report_builder.py`
-- [ ] T011 [P] Create external dependency smoke tests in `tests/integration/test_llm_connectivity.py`, `tests/integration/test_search_connectivity.py`, `tests/integration/test_vector_store.py`, and `tests/integration/test_embedding_connectivity.py`
-- [ ] T012 Implement a unified API/app bootstrap in `main.py` and `api/routes.py`
+- [X] T006 Implement shared application configuration and client factories in `config.py`
+- [X] T007 [P] Implement source metadata and content-type schemas in `agents/state.py`
+- [X] T008 [P] Implement competitor configuration persistence in `data/config/competitors.json` and `tools/knowledge_base.py`
+- [X] T009 Implement vector memory and baseline repository utilities in `tools/knowledge_base.py`
+- [X] T010 [P] Implement common logging, timeout, and graceful-degradation helpers in `tools/report_builder.py`
+- [X] T011 [P] Create external dependency smoke tests in `tests/integration/test_llm_connectivity.py`, `tests/integration/test_search_connectivity.py`, `tests/integration/test_vector_store.py`, and `tests/integration/test_embedding_connectivity.py`
+- [X] T012 Implement a unified API/app bootstrap in `main.py` and `api/routes.py`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -57,22 +57,22 @@
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T013 [P] [US1] Add pipeline smoke coverage in `tests/integration/test_pipeline.py`
-- [ ] T014 [P] [US1] Add API contract test for `POST /api/analyze` in `tests/contract/test_analyze_api.py`
-- [ ] T015 [P] [US1] Add orchestrator integration test for single and multi-target analysis in `tests/integration/test_orchestrator_analysis.py`
+- [X] T013 [P] [US1] Add pipeline smoke coverage in `tests/integration/test_pipeline.py`
+- [X] T014 [P] [US1] Add API contract test for `POST /api/analyze` in `tests/contract/test_analyze_api.py`
+- [X] T015 [P] [US1] Add orchestrator integration test for single and multi-target analysis in `tests/integration/test_orchestrator_analysis.py`
 
 ### Implementation for User Story 1
 
-- [ ] T016 [P] [US1] Implement public search client and result normalization in `tools/web_search.py`
-- [ ] T017 [P] [US1] Implement web page fetching with legal-source-safe degradation in `tools/web_fetcher.py`
-- [ ] T018 [P] [US1] Implement structured extraction and `fact/inference/unverified` classification in `tools/data_extractor.py`
-- [ ] T019 [P] [US1] Implement Search Agent query construction and result packaging in `agents/search_agent.py`
-- [ ] T020 [P] [US1] Implement Analysis Agent extraction, credibility scoring, and baseline lookup in `agents/analysis_agent.py`
-- [ ] T021 [US1] Implement Orchestrator intent parsing and workflow execution in `agents/orchestrator.py`
-- [ ] T022 [US1] Implement report assembly for base analysis responses in `agents/report_agent.py`
-- [ ] T023 [US1] Wire the analysis HTTP endpoint and response mapping in `api/routes.py`
-- [ ] T024 [US1] Add a CLI or scriptable runner for the end-to-end MVP chain in `tests/integration/test_pipeline.py`
-- [ ] T025 [US1] Persist validated intelligence items and baseline snapshots in `tools/knowledge_base.py`
+- [X] T016 [P] [US1] Implement public search client and result normalization in `tools/web_search.py`
+- [X] T017 [P] [US1] Implement web page fetching with legal-source-safe degradation in `tools/web_fetcher.py`
+- [X] T018 [P] [US1] Implement structured extraction and `fact/inference/unverified` classification in `tools/data_extractor.py`
+- [X] T019 [P] [US1] Implement Search Agent query construction and result packaging in `agents/search_agent.py`
+- [X] T020 [P] [US1] Implement Analysis Agent extraction, credibility scoring, and baseline lookup in `agents/analysis_agent.py`
+- [X] T021 [US1] Implement Orchestrator intent parsing and workflow execution in `agents/orchestrator.py`
+- [X] T022 [US1] Implement report assembly for base analysis responses in `agents/report_agent.py`
+- [X] T023 [US1] Wire the analysis HTTP endpoint and response mapping in `api/routes.py`
+- [X] T024 [US1] Add a CLI or scriptable runner for the end-to-end MVP chain in `tests/integration/test_pipeline.py`
+- [X] T025 [US1] Persist validated intelligence items and baseline snapshots in `tools/knowledge_base.py`
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
