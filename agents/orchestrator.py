@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Optional
 from agents.alert_agent import generate_alerts
 from agents.analysis_agent import analyze_results, build_change_events
 from agents.report_agent import build_report
-from feishu.sender import send_card
 from agents.search_agent import run_search
 from config import config
+from feishu.sender import send_card
 from tools.knowledge_base import save_intel, save_snapshot
 from tools.report_builder import get_logger
 
@@ -24,6 +24,33 @@ def _infer_intent_type(targets: List[str], dimensions: List[str]) -> str:
     if len(dimensions) == 1:
         return "TYPE_C"
     return "TYPE_A"
+
+
+def _build_comparison_report(
+    task_id: str,
+    targets: List[str],
+    reports: List[Dict[str, Any]],
+    analysis_count: int,
+) -> Dict[str, Any]:
+    return {
+        "report_id": f"RPT-{task_id}",
+        "report_type": "comparison",
+        "target": ", ".join(targets),
+        "generated_at": reports[0]["generated_at"] if reports else "",
+        "executive_summary": "已完成 {count} 个竞品的对比分析。".format(
+            count=len(targets)
+        ),
+        "dimensions_detail": {
+            report["target"]: report["dimensions_detail"] for report in reports
+        },
+        "changes_summary": "跨竞品对比已生成，请重点关注差异化动态。",
+        "chart_data": [],
+        "recommended_actions": [],
+        "key_insights": [report["executive_summary"] for report in reports],
+        "data_quality_note": "总计提取 {count} 条结构化情报。".format(
+            count=analysis_count
+        ),
+    }
 
 
 def run_analysis(
@@ -80,22 +107,14 @@ def run_analysis(
             report["feishu_delivery"] = send_card(report.get("feishu_card", {}))
         reports.append(report)
 
-    final_report = reports[0] if len(reports) == 1 else {
-        "report_id": f"RPT-{task_id}",
-        "report_type": "comparison",
-        "target": ", ".join(targets),
-        "generated_at": reports[0]["generated_at"] if reports else "",
-        "executive_summary": f"已完成 {len(targets)} 个竞品的对比分析。",
-        "dimensions_detail": {report["target"]: report["dimensions_detail"] for report in reports},
-        "changes_summary": "初始版本未生成跨竞品变化摘要",
-        "chart_data": [],
-        "recommended_actions": [],
-        "key_insights": [report["executive_summary"] for report in reports],
-        "data_quality_note": f"总计提取 {len(all_analysis_results)} 条结构化情报",
-    }
+    final_report = (
+        reports[0]
+        if len(reports) == 1
+        else _build_comparison_report(task_id, targets, reports, len(all_analysis_results))
+    )
 
     return {
-        "query": f"分析 {', '.join(targets)}",
+        "query": "分析 {targets}".format(targets=", ".join(targets)),
         "task_id": task_id,
         "intent_type": intent_type,
         "targets": targets,
@@ -110,7 +129,11 @@ def run_analysis(
         "dashboard": {
             "report": final_report,
             "alerts": all_alerts,
-            "cards": [report.get("feishu_card") for report in reports if report.get("feishu_card")],
+            "cards": [
+                report.get("feishu_card")
+                for report in reports
+                if report.get("feishu_card")
+            ],
         },
         "error": "",
     }

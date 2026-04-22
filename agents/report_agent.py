@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from feishu.cards import build_report_card
 from tools.chart_generator import build_report_charts
-from tools.report_builder import utc_now_iso
+from tools.report_builder import degradation_note, utc_now_iso
 
 
 def build_report(
@@ -31,13 +31,13 @@ def build_report(
     else:
         executive_summary += " 当前为冷启动或暂无可用历史基线。"
 
-    recommended_actions = []
+    recommended_actions: List[Dict[str, Any]] = []
     if key_insights:
         recommended_actions.append(
             {
                 "priority": "ASAP",
                 "department": "产品",
-                "action": "复核本次竞品核心动态与我方路线图的差异",
+                "action": "复核本次竞品核心动态与我方路线图的差异。",
                 "basis": key_insights[0],
             }
         )
@@ -53,10 +53,32 @@ def build_report(
 
     chart_data = build_report_charts(analysis_results)
     changes_summary = (
-        "已识别并生成 {count} 条变化预警".format(count=len(alerts or []))
+        "已识别并生成 {count} 条变化预警。".format(count=len(alerts or []))
         if alerts
-        else ("已完成与历史基线对比，当前没有新增预警" if baseline else "暂无历史对比结果")
+        else ("已完成与历史基线对比，当前没有新增预警。" if baseline else "暂无历史对比结果。")
     )
+
+    fallback_hits = sum(
+        1
+        for item in analysis_results
+        if item.get("source_type") == "mock_public_source" or item.get("fallback_used")
+    )
+    degradation_messages: List[str] = []
+    for item in analysis_results:
+        note = item.get("degradation_note", "")
+        if note and note not in degradation_messages:
+            degradation_messages.append(note)
+
+    quality_note = "结果基于 {count} 条公开来源情报生成。".format(
+        count=len(analysis_results)
+    )
+    if fallback_hits:
+        quality_note += " " + degradation_note(
+            "其中部分信息来自本地演示回退数据",
+            "中",
+        )
+    if degradation_messages:
+        quality_note += " " + " ".join(degradation_messages)
 
     report = {
         "report_id": f"RPT-{task_id}",
@@ -70,9 +92,7 @@ def build_report(
         "chart_data": chart_data,
         "recommended_actions": recommended_actions,
         "key_insights": key_insights,
-        "data_quality_note": "结果基于 {count} 条公开来源情报生成".format(
-            count=len(analysis_results)
-        ),
+        "data_quality_note": quality_note,
     }
     report["feishu_card"] = build_report_card(report, alerts or [])
     return report

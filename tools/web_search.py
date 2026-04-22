@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import httpx
 
 from config import config
+from tools.report_builder import degradation_note
 
 
 def extract_domain(url: str) -> str:
@@ -33,6 +34,7 @@ def _normalize_serper(items: List[Dict], query: str, limit: int) -> List[Dict]:
                 "date": item.get("date", ""),
                 "crawl_date": today,
                 "query": query,
+                "compliance_note": "来源于公开搜索结果，需要进一步抓取和核验。",
             }
         )
     return results
@@ -78,6 +80,7 @@ def _search_tavily(query: str, num: int) -> List[Dict]:
             "date": item.get("published_date", ""),
             "crawl_date": today,
             "query": query,
+            "compliance_note": "来源于公开搜索结果，需要进一步抓取和核验。",
         }
         for item in data[:num]
     ]
@@ -89,19 +92,19 @@ def _mock_results(query: str, num: int) -> List[Dict]:
     company = query.split()[0] if query.strip() else "竞品"
     snippets = [
         {
-            "title": u"%s 发布智能协作更新" % company,
-            "url": "https://example.com/%s/product-update" % company,
-            "snippet": u"%s 今日发布新的智能协作能力，覆盖产品动态与会议场景。" % company,
+            "title": "{company} 发布智能协作更新".format(company=company),
+            "url": "https://example.com/{company}/product-update".format(company=company),
+            "snippet": "{company} 今日发布新的智能协作能力，覆盖产品动态与会议场景。".format(company=company),
         },
         {
-            "title": u"%s 调整产品定价策略" % company,
-            "url": "https://example.com/%s/pricing-update" % company,
-            "snippet": u"%s 宣布套餐价格调整，并强化企业版能力。" % company,
+            "title": "{company} 调整产品定价策略".format(company=company),
+            "url": "https://example.com/{company}/pricing-update".format(company=company),
+            "snippet": "{company} 宣布套餐价格调整，并强化企业版能力。".format(company=company),
         },
         {
-            "title": u"%s 招聘与战略扩张信号" % company,
-            "url": "https://example.com/%s/strategy-update" % company,
-            "snippet": u"%s 正在扩招相关岗位，并提及新的市场合作方向。" % company,
+            "title": "{company} 招聘与战略扩张信号".format(company=company),
+            "url": "https://example.com/{company}/strategy-update".format(company=company),
+            "snippet": "{company} 正在扩招相关岗位，并提及新的市场合作方向。".format(company=company),
         },
     ]
     results: List[Dict] = []
@@ -112,10 +115,15 @@ def _mock_results(query: str, num: int) -> List[Dict]:
                 "url": item["url"],
                 "snippet": item["snippet"],
                 "source_name": extract_domain(item["url"]),
-                "source_type": "official",
+                "source_type": "mock_public_source",
                 "date": today,
                 "crawl_date": today,
                 "query": query,
+                "degradation_note": degradation_note(
+                    "外部搜索不可用，已回退到本地公开来源模拟数据",
+                    "中",
+                ),
+                "compliance_note": "仅用于本地演示和测试，不代表真实线上情报结论。",
             }
         )
     return results

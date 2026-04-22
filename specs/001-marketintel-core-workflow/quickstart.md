@@ -2,103 +2,84 @@
 
 ## 1. 准备环境
 
-1. 使用 Python 3.11+ 创建并激活虚拟环境。
+1. 使用 Python `3.11+` 创建并激活虚拟环境
 2. 安装后端依赖：`pip install -r requirements.txt`
-3. 准备前端环境：进入 `web/` 后执行 `npm install`
-4. 复制 `.env.example` 为 `.env`，填入以下最小配置：
-   - `LLM_API_KEY`
-   - `LLM_BASE_URL`
-   - `LLM_MODEL`
-   - `SERPER_API_KEY` 或等价搜索服务密钥
-   - `EMBEDDING_MODEL`
-   - 飞书相关配置可在 Phase 4 再补齐
+3. 进入 `web/` 执行 `npm install`
+4. 复制 `.env.example` 为 `.env`
 
-## 2. 验证外部依赖
+可选能力：
 
-按顺序准备独立验证脚本并确认通过：
+- LLM：`LLM_API_KEY`、`LLM_BASE_URL`、`LLM_MODEL`
+- 搜索：`SERPER_API_KEY` 或 `TAVILY_API_KEY`
+- 飞书：`FEISHU_APP_ID`、`FEISHU_APP_SECRET`、`FEISHU_TARGET_CHAT_ID`
 
-1. LLM 连通性验证
-2. 搜索 API 验证
-3. 向量库写入与查询验证
-4. Embedding 接口验证
+如果不配置搜索或 LLM，项目仍可通过本地回退数据完成演示。
 
-预期结果：
+## 2. 快速验证
 
-- LLM 能返回固定测试文本
-- 搜索 API 能返回候选结果
-- 向量库可以写入并召回测试文本
-- Embedding 接口返回非空向量
+推荐先跑轻量测试：
 
-## 3. 跑通 MVP 主链路
+```powershell
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD='1'
+python -m pytest tests/smoke/test_basic.py -q
+python -m pytest tests/integration/test_pipeline.py -q
+python -m pytest tests/contract/test_analyze_api.py -q
+```
 
-按以下顺序建设并验证：
+如需验证预警和摘要：
 
-1. 实现 `config.py`
-2. 实现 `tools/web_search.py`
-3. 实现 `tools/web_fetcher.py`
-4. 实现 `tools/data_extractor.py`
-5. 实现 `tools/knowledge_base.py`
-6. 编写一个临时 pipeline 脚本，完成：
-   - 搜索
-   - 抓取
-   - 提取
-   - 存储
-   - 历史检索
+```powershell
+python -m pytest tests/integration/test_alert_dedup.py -q
+python -m pytest tests/integration/test_scheduler_summary.py -q
+python -m pytest tests/contract/test_report_payloads.py -q
+```
 
-验收标准：
+## 3. 启动 API
 
-- 输入单个竞品后，脚本能输出结构化情报列表
-- 失败页面会自动降级到摘要
-- 向量库目录中可以看到写入结果
+```powershell
+python -m uvicorn main:app --reload
+```
 
-## 4. 迁移到 Agent 工作流
+验证：
 
-1. 定义统一状态对象
-2. 实现 Search Agent
-3. 实现 Analysis Agent
-4. 实现 Alert Agent
-5. 实现 Report Agent
-6. 用 Orchestrator 将各节点串联为标准流程
+- `GET /health`
+- `POST /api/analyze`
+- `GET /api/alerts`
+- `POST /api/feishu/webhook`
 
-验收标准：
+## 4. 演示主链路
 
-- 日志中可见各 Agent 执行阶段
-- 第二次分析同一竞品时，系统能读取历史并尝试生成变化检测结果
+1. 对 `飞书` 发起一次分析
+2. 再对同一目标重复分析，展示变化预警与去重
+3. 查看返回的 `report.executive_summary`、`changes_summary`、`chart_data`
+4. 切换多竞品分析，观察 comparison report
 
-## 5. 接入 Web Dashboard
+## 5. 演示前端
 
-1. 启动 FastAPI API 层
-2. 创建 React + Vite 前端
-3. 完成以下页面或组件：
-   - 对话输入与结果展示
-   - 预警面板
-   - 竞品配置中心
-   - 可选：竞品对比图表
+当前前端骨架文件：
 
-验收标准：
+- `web/src/components/ChatInterface.tsx`
+- `web/src/components/AlertPanel.tsx`
+- `web/src/pages/ConfigPage.tsx`
+- `web/src/services/api.ts`
 
-- 用户能在页面输入竞品并看到结构化报告
-- 配置页能新增监测竞品
-- 有预警时面板中出现对应条目
+建议在接入 Vite 页面时展示：
 
-## 6. 接入飞书
+- 分析输入与进度状态
+- 预警面板
+- 竞品配置中心
+- 报告摘要与图表
 
-1. 创建企业自建应用
-2. 开通机器人和消息相关权限
-3. 注册 Webhook 路由
-4. 通过公网隧道调试事件订阅
-5. 实现“处理中卡片”“报告卡片”“预警卡片”
+## 6. 演示调度与飞书
 
-验收标准：
+- `scheduler/jobs.py`：daily / weekly summary
+- `scheduler/runner.py`：scheduler 描述与任务注册
+- `feishu/cards.py`：卡片结构
+- `feishu/webhook.py`：webhook 分析入口
+- `feishu/sender.py`：安全 mock 发送
 
-- 在飞书中 @机器人 可以触发一次分析并收到返回卡片
-- 高优先级预警可主动推送
+## 7. 注意事项
 
-## 7. 演示前检查
-
-- 单竞品分析可跑通
-- 多 Agent 日志可展示
-- 历史对比可展示
-- Web Dashboard 可演示
-- 配置中心可演示
-- 飞书集成若已完成，可现场展示
+- 所有结果仅应基于公开、合法来源
+- 如果命中本地 mock 回退，输出会带数据质量说明
+- 本地演示数据仅用于流程验证，不代表真实市场结论

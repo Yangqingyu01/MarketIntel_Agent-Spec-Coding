@@ -4,6 +4,8 @@ import { analyzeCompetitors, type AnalyzeResponse } from "../services/api";
 
 const DIMENSIONS = ["product", "pricing", "funding", "talent", "strategy"];
 
+const STAGES = ["目标识别", "公开搜索", "页面抓取", "信息提取", "结构化报告"];
+
 export function ChatInterface() {
   const [targetInput, setTargetInput] = useState("飞书");
   const [selectedDimensions, setSelectedDimensions] = useState<string[]>(["product", "strategy"]);
@@ -42,8 +44,17 @@ export function ChatInterface() {
 
   return (
     <section style={panelStyle}>
-      <h2 style={titleStyle}>市场情报对话台</h2>
-      <p style={mutedStyle}>输入一个或多个竞品名称，快速发起分析。</p>
+      <div style={heroStyle}>
+        <div>
+          <p style={eyebrowStyle}>MarketIntel Console</p>
+          <h2 style={titleStyle}>市场情报对话台</h2>
+          <p style={mutedStyle}>输入一个或多个竞品名称，快速发起分析并返回结构化结论。</p>
+        </div>
+        <div style={statusCardStyle}>
+          <span style={statusLabelStyle}>当前模式</span>
+          <strong>{loading ? "执行中" : "待命"}</strong>
+        </div>
+      </div>
       <textarea
         value={targetInput}
         onChange={(event) => setTargetInput(event.target.value)}
@@ -69,13 +80,29 @@ export function ChatInterface() {
       <button type="button" onClick={handleAnalyze} disabled={loading} style={buttonStyle}>
         {loading ? "分析中..." : "开始分析"}
       </button>
+      <div style={progressRowStyle}>
+        {STAGES.map((stage, index) => (
+          <div key={stage} style={progressItemStyle}>
+            <div
+              style={{
+                ...progressDotStyle,
+                background: loading || result ? "#e85d04" : "#d0d5dd",
+                opacity: !loading && !result && index > 0 ? 0.5 : 1,
+              }}
+            />
+            <span style={progressTextStyle}>{stage}</span>
+          </div>
+        ))}
+      </div>
       {error ? <p style={errorStyle}>{error}</p> : null}
       {result ? (
         <div style={resultStyle}>
-          <h3 style={subtitleStyle}>{result.report.target}</h3>
+          <div style={resultHeaderStyle}>
+            <h3 style={subtitleStyle}>{result.report.target}</h3>
+            <span style={metricStyle}>情报 {result.intel_count}</span>
+          </div>
           <p>{result.report.executive_summary}</p>
           <p>{result.report.changes_summary}</p>
-          <p>结构化情报数：{result.intel_count}</p>
         </div>
       ) : null}
     </section>
@@ -83,35 +110,69 @@ export function ChatInterface() {
 }
 
 const panelStyle: CSSProperties = {
-  padding: "24px",
-  borderRadius: "24px",
-  background: "linear-gradient(145deg, #fff9f0, #eef6ff)",
-  boxShadow: "0 20px 60px rgba(23, 70, 162, 0.12)",
+  padding: "28px",
+  borderRadius: "28px",
+  background:
+    "radial-gradient(circle at top right, rgba(232,93,4,0.22), transparent 24%), linear-gradient(145deg, #fff8ef, #eef6ff)",
+  boxShadow: "0 24px 70px rgba(23, 70, 162, 0.14)",
+};
+
+const heroStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "16px",
+  flexWrap: "wrap",
+  alignItems: "flex-start",
+};
+
+const eyebrowStyle: CSSProperties = {
+  margin: "0 0 8px",
+  color: "#e85d04",
+  fontSize: "12px",
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+};
+
+const statusCardStyle: CSSProperties = {
+  minWidth: "140px",
+  padding: "14px 16px",
+  borderRadius: "18px",
+  background: "rgba(255,255,255,0.78)",
+  color: "#1f2a44",
+};
+
+const statusLabelStyle: CSSProperties = {
+  display: "block",
+  marginBottom: "6px",
+  color: "#5e6983",
+  fontSize: "12px",
 };
 
 const titleStyle: CSSProperties = {
   margin: 0,
-  fontSize: "28px",
+  fontSize: "30px",
   color: "#1f2a44",
 };
 
 const subtitleStyle: CSSProperties = {
-  marginBottom: "8px",
+  margin: 0,
   color: "#1f2a44",
 };
 
 const mutedStyle: CSSProperties = {
   color: "#5e6983",
+  maxWidth: "620px",
 };
 
 const textareaStyle: CSSProperties = {
   width: "100%",
-  marginTop: "12px",
-  padding: "14px 16px",
-  borderRadius: "16px",
+  marginTop: "16px",
+  padding: "16px 18px",
+  borderRadius: "18px",
   border: "1px solid #cfd7ea",
   resize: "vertical",
   fontSize: "15px",
+  background: "rgba(255,255,255,0.88)",
 };
 
 const chipGroupStyle: CSSProperties = {
@@ -127,6 +188,7 @@ const chipStyle: CSSProperties = {
   borderRadius: "999px",
   padding: "10px 14px",
   cursor: "pointer",
+  fontWeight: 600,
 };
 
 const buttonStyle: CSSProperties = {
@@ -136,7 +198,34 @@ const buttonStyle: CSSProperties = {
   background: "#e85d04",
   color: "#fff",
   cursor: "pointer",
-  fontWeight: 600,
+  fontWeight: 700,
+};
+
+const progressRowStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+  gap: "12px",
+  marginTop: "18px",
+};
+
+const progressItemStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  padding: "10px 12px",
+  borderRadius: "14px",
+  background: "rgba(255,255,255,0.68)",
+};
+
+const progressDotStyle: CSSProperties = {
+  width: "12px",
+  height: "12px",
+  borderRadius: "999px",
+};
+
+const progressTextStyle: CSSProperties = {
+  fontSize: "13px",
+  color: "#344054",
 };
 
 const resultStyle: CSSProperties = {
@@ -144,6 +233,23 @@ const resultStyle: CSSProperties = {
   padding: "18px",
   borderRadius: "18px",
   background: "#fff",
+};
+
+const resultHeaderStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "12px",
+};
+
+const metricStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  padding: "6px 10px",
+  borderRadius: "999px",
+  background: "#eef2ff",
+  color: "#1746a2",
+  fontWeight: 700,
 };
 
 const errorStyle: CSSProperties = {

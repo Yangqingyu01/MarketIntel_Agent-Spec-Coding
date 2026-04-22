@@ -133,11 +133,11 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T045 [P] Document environment setup and demo flow in `README.md`
-- [ ] T046 Harden public-source compliance, fallback messaging, and data quality notes across `agents/` and `tools/`
-- [ ] T047 [P] Add end-to-end stability coverage in `tests/integration/test_e2e.py`
-- [ ] T048 [P] Validate quickstart steps against the current implementation in `specs/001-marketintel-core-workflow/quickstart.md`
-- [ ] T049 Finalize demo-ready frontend styling and progress-state visibility in `web/src/components/` and `web/src/pages/`
+- [X] T045 [P] Document environment setup and demo flow in `README.md`
+- [X] T046 Harden public-source compliance, fallback messaging, and data quality notes across `agents/` and `tools/`
+- [X] T047 [P] Add end-to-end stability coverage in `tests/integration/test_e2e.py`
+- [X] T048 [P] Validate quickstart steps against the current implementation in `specs/001-marketintel-core-workflow/quickstart.md`
+- [X] T049 Finalize demo-ready frontend styling and progress-state visibility in `web/src/components/` and `web/src/pages/`
 
 ---
 

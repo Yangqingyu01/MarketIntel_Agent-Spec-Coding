@@ -45,9 +45,13 @@ def analyze_results(
         extracted["credibility"] = score_item(item, extracted)
         extracted["source_url"] = item.get("url", "")
         extracted["source_name"] = item.get("source_name", "")
+        extracted["source_type"] = item.get("source_type", "search_result")
         extracted["publish_date"] = item.get("publish_date", "")
         extracted["crawl_date"] = item.get("crawl_date", current_date())
         extracted["raw_title"] = item.get("title", "")
+        extracted["fallback_used"] = bool(item.get("fallback_used", False))
+        extracted["degradation_note"] = item.get("degradation_note", "")
+        extracted["compliance_note"] = item.get("compliance_note", "")
         analysis_results.append(extracted)
 
     baseline = get_latest_snapshot(target)

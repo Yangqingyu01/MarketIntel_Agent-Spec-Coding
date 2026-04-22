@@ -38,8 +38,11 @@ def safe_json_dumps(payload: Any) -> str:
 def truncate_text(value: str, limit: int) -> str:
     if len(value) <= limit:
         return value
-    return value[: max(limit - 7, 0)] + "..."
+    return value[: max(limit - 3, 0)] + "..."
 
 
 def degradation_note(reason: str, reliability: str) -> str:
-    return f"{reason}。结果可靠性：{reliability}"
+    return "{reason}。结果可靠性：{reliability}".format(
+        reason=reason,
+        reliability=reliability,
+    )
