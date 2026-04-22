@@ -109,21 +109,21 @@
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T033 [P] [US3] Add report contract validation for report and card payloads in `tests/contract/test_report_payloads.py`
-- [ ] T034 [P] [US3] Add scheduled-summary integration coverage in `tests/integration/test_scheduler_summary.py`
+- [X] T033 [P] [US3] Add report contract validation for report and card payloads in `tests/contract/test_report_payloads.py`
+- [X] T034 [P] [US3] Add scheduled-summary integration coverage in `tests/integration/test_scheduler_summary.py`
 
 ### Implementation for User Story 3
 
-- [ ] T035 [P] [US3] Implement executive summary, actions, and chart data generation in `agents/report_agent.py`
-- [ ] T036 [P] [US3] Implement chart data builders for timeline and comparison output in `tools/chart_generator.py`
-- [ ] T037 [P] [US3] Implement Web dashboard analysis flow service in `web/src/services/api.ts`
-- [ ] T038 [P] [US3] Implement dashboard chat and result display UI in `web/src/components/ChatInterface.tsx`
-- [ ] T039 [P] [US3] Implement alert panel UI in `web/src/components/AlertPanel.tsx`
-- [ ] T040 [P] [US3] Implement competitor configuration UI in `web/src/pages/ConfigPage.tsx`
-- [ ] T041 [US3] Implement scheduler job orchestration for daily and weekly scans in `scheduler/jobs.py` and `scheduler/runner.py`
-- [ ] T042 [US3] Implement Feishu webhook handling and reply flow in `feishu/webhook.py` and `api/feishu_routes.py`
-- [ ] T043 [US3] Implement Feishu cards and push sender in `feishu/cards.py` and `feishu/sender.py`
-- [ ] T044 [US3] Connect report, alert, dashboard, and Feishu output paths in `agents/orchestrator.py` and `main.py`
+- [X] T035 [P] [US3] Implement executive summary, actions, and chart data generation in `agents/report_agent.py`
+- [X] T036 [P] [US3] Implement chart data builders for timeline and comparison output in `tools/chart_generator.py`
+- [X] T037 [P] [US3] Implement Web dashboard analysis flow service in `web/src/services/api.ts`
+- [X] T038 [P] [US3] Implement dashboard chat and result display UI in `web/src/components/ChatInterface.tsx`
+- [X] T039 [P] [US3] Implement alert panel UI in `web/src/components/AlertPanel.tsx`
+- [X] T040 [P] [US3] Implement competitor configuration UI in `web/src/pages/ConfigPage.tsx`
+- [X] T041 [US3] Implement scheduler job orchestration for daily and weekly scans in `scheduler/jobs.py` and `scheduler/runner.py`
+- [X] T042 [US3] Implement Feishu webhook handling and reply flow in `feishu/webhook.py` and `api/feishu_routes.py`
+- [X] T043 [US3] Implement Feishu cards and push sender in `feishu/cards.py` and `feishu/sender.py`
+- [X] T044 [US3] Connect report, alert, dashboard, and Feishu output paths in `agents/orchestrator.py` and `main.py`
 
 **Checkpoint**: All user stories should now be independently functional
 

@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from agents.alert_agent import generate_alerts
 from agents.analysis_agent import analyze_results, build_change_events
 from agents.report_agent import build_report
+from feishu.sender import send_card
 from agents.search_agent import run_search
 from config import config
 from tools.knowledge_base import save_intel, save_snapshot
@@ -68,7 +69,16 @@ def run_analysis(
         save_snapshot(target, analysis_results)
 
         logger.info("[Report Agent] building report for %s", target)
-        reports.append(build_report(task_id, target, analysis_results, baseline))
+        report = build_report(
+            task_id,
+            target,
+            analysis_results,
+            baseline,
+            alerts=alerts,
+        )
+        if output_format == "feishu":
+            report["feishu_delivery"] = send_card(report.get("feishu_card", {}))
+        reports.append(report)
 
     final_report = reports[0] if len(reports) == 1 else {
         "report_id": f"RPT-{task_id}",
@@ -97,5 +107,10 @@ def run_analysis(
         "change_events": all_change_events,
         "alerts": all_alerts,
         "report": final_report,
+        "dashboard": {
+            "report": final_report,
+            "alerts": all_alerts,
+            "cards": [report.get("feishu_card") for report in reports if report.get("feishu_card")],
+        },
         "error": "",
     }
