@@ -9,6 +9,13 @@ import {
   type HistoryOverviewResponse,
   type HistoryResponse,
 } from "../services/api";
+import {
+  localizeAlertDescription,
+  localizeAlertTitle,
+  localizeCompanyName,
+  localizeDimensionLabel,
+  localizeSeverity,
+} from "../services/localization";
 
 type HistoryPanelProps = {
   language: AppLanguage;
@@ -45,7 +52,15 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
 
   useEffect(() => {
     fetchHistoryOverview(companies)
-      .then((payload) => setOverviewRows(payload.overview.rows))
+      .then((payload) => {
+        setOverviewRows(payload.overview.rows);
+        const derivedCompanies = payload.overview.rows
+          .map((row) => String(row.company || "").trim())
+          .filter(Boolean);
+        if (derivedCompanies.length > 0) {
+          setCompanies((current) => Array.from(new Set([...current, ...derivedCompanies])));
+        }
+      })
       .catch(() => setOverviewRows([]));
   }, [companies]);
 
@@ -74,14 +89,14 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
         title: "历史对比",
         company: "竞品",
         overview: "多竞品横向时间线",
+        overviewHint: "当前这里先展示历史样本最完整的主线对比。",
         snapshots: "历史快照",
-        timeline: "趋势图",
+        timeline: "趋势指标",
+        timelineHint: "",
         comparisons: "快照 Diff",
-        alerts: "预警串联",
+        alerts: "最新预警",
         sourceCount: "来源数",
         confidence: "可信度",
-        product: "产品",
-        pricing: "定价",
         empty: "当前还没有足够的真实历史记录。",
         descending: "最新预警",
         details: "展开详情",
@@ -99,7 +114,7 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
         removed: "移除",
         productTrend: "产品趋势",
         pricingTrend: "定价趋势",
-        sourcesTrend: "来源趋势",
+        sourcesTrend: "来源覆盖度",
       };
     }
 
@@ -108,14 +123,15 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
       title: "Historical View",
       company: "Company",
       overview: "Cross-Competitor Timeline",
+      overviewHint:
+        "This section currently shows the strongest historical comparison tracks first.",
       snapshots: "Snapshots",
-      timeline: "Trend View",
+      timeline: "Trend Metrics",
+      timelineHint: "",
       comparisons: "Snapshot Diff",
-      alerts: "Alert Stream",
+      alerts: "Latest Alerts",
       sourceCount: "Sources",
       confidence: "Confidence",
-      product: "Product",
-      pricing: "Pricing",
       empty: "There is not enough real historical data yet.",
       descending: "Latest Alerts",
       details: "View details",
@@ -133,7 +149,7 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
       removed: "Removed",
       productTrend: "Product Trend",
       pricingTrend: "Pricing Trend",
-      sourcesTrend: "Source Trend",
+      sourcesTrend: "Source Coverage",
     };
   }, [language]);
 
@@ -166,16 +182,19 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
             <div className="bau-detail-panel__header">
               <p className="bau-label">{copy.overview}</p>
             </div>
+            <p className="bau-helper">{copy.overviewHint}</p>
             <div className="bau-overview-timeline">
               {overviewRows.map((row) => (
                 <article key={`${row.company}-${row.snapshot_id}`} className="bau-overview-row">
                   <div className="bau-overview-row__head">
-                    <span className="bau-pill bau-pill--white">{row.company}</span>
-                    <span className="bau-meta">{row.snapshot_date}</span>
+                    <span className="bau-pill bau-pill--white">
+                      {localizeCompanyName(row.company, language)}
+                    </span>
+                    <span className="bau-meta">{formatDateLabel(row.snapshot_date)}</span>
                   </div>
                   <div className="bau-overview-row__bars">
                     <div>
-                      <span>{copy.product}</span>
+                      <span>{localizeDimensionLabel("product", language)}</span>
                       <div className="bau-mini-track">
                         <div
                           className="bau-mini-fill bau-mini-fill--red"
@@ -184,7 +203,7 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
                       </div>
                     </div>
                     <div>
-                      <span>{copy.pricing}</span>
+                      <span>{localizeDimensionLabel("pricing", language)}</span>
                       <div className="bau-mini-track">
                         <div
                           className="bau-mini-fill bau-mini-fill--blue"
@@ -210,7 +229,7 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
                     <article key={snapshot.snapshot_id} className="bau-snapshot-card">
                       <div className="bau-snapshot-card__header">
                         <div>
-                          <p className="bau-meta">{snapshot.snapshot_date}</p>
+                          <p className="bau-meta">{formatDateLabel(snapshot.snapshot_date)}</p>
                           <p className="bau-snapshot-card__text">
                             {copy.sourceCount}: {snapshot.source_count}
                           </p>
@@ -240,6 +259,7 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
                                 key={itemKey}
                                 item={item}
                                 copy={copy}
+                                language={language}
                                 expanded={expandedItemKey === itemKey}
                                 onToggle={() =>
                                   setExpandedItemKey((current) =>
@@ -261,6 +281,7 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
               <div className="bau-detail-panel__header">
                 <p className="bau-label">{copy.timeline}</p>
               </div>
+              {copy.timelineHint ? <p className="bau-helper">{copy.timelineHint}</p> : null}
               <div className="bau-trend-stack">
                 <TrendCard
                   title={copy.productTrend}
@@ -274,12 +295,6 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
                   values={history.timeline.map((point) => point.pricing_count)}
                   labels={history.timeline.map((point) => point.snapshot_date)}
                 />
-                <TrendCard
-                  title={copy.sourcesTrend}
-                  tone="yellow"
-                  values={history.timeline.map((point) => point.source_count)}
-                  labels={history.timeline.map((point) => point.snapshot_date)}
-                />
               </div>
             </section>
 
@@ -290,9 +305,9 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
               <div className="bau-compare-list">
                 {history.comparisons.map((comparison) => (
                   <article key={comparison.snapshot_id} className="bau-compare-card">
-                    <p className="bau-meta">{comparison.snapshot_date}</p>
+                    <p className="bau-meta">{formatDateLabel(comparison.snapshot_date)}</p>
                     <DimensionDiff
-                      label={copy.product}
+                      label={localizeDimensionLabel("product", language)}
                       data={comparison.product}
                       emptyLabel={copy.noHighlight}
                       removedLabel={copy.noRemoved}
@@ -300,7 +315,7 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
                       removedCopy={copy.removed}
                     />
                     <DimensionDiff
-                      label={copy.pricing}
+                      label={localizeDimensionLabel("pricing", language)}
                       data={comparison.pricing}
                       emptyLabel={copy.noHighlight}
                       removedLabel={copy.noRemoved}
@@ -319,7 +334,12 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
               <div className="bau-history-alerts">
                 {history.alerts.length > 0 ? (
                   history.alerts.map((alert) => (
-                    <HistoryAlertCard key={alert.alert_id} alert={alert} copy={copy} />
+                    <HistoryAlertCard
+                      key={alert.alert_id}
+                      alert={alert}
+                      copy={copy}
+                      language={language}
+                    />
                   ))
                 ) : (
                   <p className="bau-helper">{copy.noAlerts}</p>
@@ -338,25 +358,36 @@ export function HistoryPanel({ language }: HistoryPanelProps) {
 function SnapshotDetailCard({
   item,
   copy,
+  language,
   expanded,
   onToggle,
 }: {
   item: SnapshotItem;
   copy: Record<string, string>;
+  language: AppLanguage;
   expanded: boolean;
   onToggle: () => void;
 }) {
   return (
     <article className="bau-snapshot-item-card">
       <div className="bau-snapshot-item-card__meta">
-        <span className="bau-pill bau-pill--white">{item.dimension}</span>
+        <span className="bau-pill bau-pill--white">
+          {localizeDimensionLabel(item.dimension, language)}
+        </span>
         <span className="bau-meta">
-          {copy.published}: {item.publish_date || item.crawl_date || "-"}
+          {copy.published}: {formatDateLabel(item.publish_date || item.crawl_date || "-")}
         </span>
       </div>
-      <p className="bau-snapshot-item-card__title">{item.extracted_data}</p>
+      <p className="bau-snapshot-item-card__title">{normalizeBrokenText(item.extracted_data)}</p>
       <p className="bau-snapshot-item-card__text">
-        {copy.source}: {item.source_name || item.source_url}
+        {copy.source}:{" "}
+        {item.source_url ? (
+          <a className="bau-link" href={item.source_url} target="_blank" rel="noreferrer">
+            {formatSourceName(item.source_name, item.source_url)}
+          </a>
+        ) : (
+          formatSourceName(item.source_name, item.source_url)
+        )}
       </p>
       <div className="bau-snapshot-item-card__actions">
         {item.source_url ? (
@@ -377,7 +408,7 @@ function SnapshotDetailCard({
       {expanded && item.evidence_quote ? (
         <p className="bau-snapshot-item-card__quote">
           <strong>{copy.quote}: </strong>
-          {item.evidence_quote}
+          {normalizeBrokenText(item.evidence_quote)}
         </p>
       ) : null}
     </article>
@@ -409,7 +440,9 @@ function TrendCard({
               className={`bau-trend-card__bar bau-trend-card__bar--${tone}`}
               style={{ height: `${Math.max(12, (value / maxValue) * 100)}%` }}
             />
-            <span className="bau-trend-card__label">{index + 1}</span>
+            <span className="bau-trend-card__label">
+              {shortDateLabel(labels[index])}
+            </span>
           </div>
         ))}
       </div>
@@ -446,7 +479,7 @@ function DimensionDiff({
           {data.highlights.length > 0 ? (
             <ul className="bau-diff-list">
               {data.highlights.map((item, index) => (
-                <li key={`${label}-added-${index}`}>{item}</li>
+                <li key={`${label}-added-${index}`}>{normalizeBrokenText(item)}</li>
               ))}
             </ul>
           ) : (
@@ -458,7 +491,7 @@ function DimensionDiff({
           {data.removed.length > 0 ? (
             <ul className="bau-diff-list">
               {data.removed.map((item, index) => (
-                <li key={`${label}-removed-${index}`}>{item}</li>
+                <li key={`${label}-removed-${index}`}>{normalizeBrokenText(item)}</li>
               ))}
             </ul>
           ) : (
@@ -473,18 +506,25 @@ function DimensionDiff({
 function HistoryAlertCard({
   alert,
   copy,
+  language,
 }: {
   alert: AlertItem;
   copy: Record<string, string>;
+  language: AppLanguage;
 }) {
   return (
     <article className="bau-history-alert-card">
       <div className="bau-history-alert-card__meta">
-        <span className="bau-pill bau-pill--white">{alert.severity}</span>
-        <span className="bau-meta">{alert.detected_at}</span>
+        <span className="bau-pill bau-pill--white">
+          {localizeSeverity(alert.severity, language)}
+        </span>
+        <span className="bau-meta">{formatDateLabel(alert.detected_at)}</span>
       </div>
-      <h3 className="bau-alert-card__title">{alert.title}</h3>
-      <p className="bau-alert-card__text">{alert.description}</p>
+      <p className="bau-meta">{localizeCompanyName(alert.company, language)}</p>
+      <h3 className="bau-alert-card__title">{localizeAlertTitle(alert, language)}</h3>
+      <p className="bau-alert-card__text">
+        {localizeAlertDescription(alert, language)}
+      </p>
       {alert.source_url ? (
         <a className="bau-link" href={alert.source_url} target="_blank" rel="noreferrer">
           {copy.open}
@@ -492,4 +532,40 @@ function HistoryAlertCard({
       ) : null}
     </article>
   );
+}
+
+function formatDateLabel(value: string) {
+  if (!value || value === "-") {
+    return value || "-";
+  }
+  return value.replace("T", " ").replace("+00:00", " UTC").replace("Z", " UTC");
+}
+
+function shortDateLabel(value: string) {
+  if (!value) {
+    return "-";
+  }
+  const match = value.match(/\d{4}-\d{2}-\d{2}/);
+  if (!match) {
+    return value;
+  }
+  return match[0].slice(5);
+}
+
+function formatSourceName(sourceName?: string, sourceUrl?: string) {
+  if (sourceName) {
+    return sourceName;
+  }
+  if (!sourceUrl) {
+    return "-";
+  }
+  try {
+    return new URL(sourceUrl).hostname;
+  } catch {
+    return sourceUrl;
+  }
+}
+
+function normalizeBrokenText(text: string) {
+  return text.replace(/\?{3,}/g, "〔历史样本正文已脱敏〕");
 }

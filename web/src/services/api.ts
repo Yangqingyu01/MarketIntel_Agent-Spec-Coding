@@ -40,8 +40,19 @@ export type AnalyzeResponse = {
     data_quality_note: string;
     chart_data: Array<Record<string, unknown>>;
     recommended_actions: Array<Record<string, unknown>>;
+    dimensions_detail?: Record<string, Array<Record<string, unknown>>>;
   };
   alerts: AlertItem[];
+  change_events: Array<{
+    change_id: string;
+    company: string;
+    dimension: string;
+    change_type: string;
+    description: string;
+    credibility: number;
+    source_url?: string;
+    detected_at?: string;
+  }>;
   intel_count: number;
 };
 
@@ -70,6 +81,8 @@ export type FeishuStatusResponse = {
   delivery_mode: string;
   app_id_configured: boolean;
   app_secret_configured: boolean;
+  verification_token_configured: boolean;
+  encryption_enabled: boolean;
   target_chat_configured: boolean;
   target_chat_masked: string;
   webhook_endpoint: string;

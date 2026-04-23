@@ -27,6 +27,39 @@
           "search_keywords": []
         }
       ]
+    },
+    "org_170ac509e91b785e": {
+      "organization_id": "org_170ac509e91b785e",
+      "competitors": [
+        {
+          "name": "Feishu",
+          "monitoring_frequency": "daily",
+          "is_active": true,
+          "aliases": [
+            "Lark",
+            "??"
+          ],
+          "search_keywords": [
+            "?? ??",
+            "?? ??",
+            "?? ??"
+          ]
+        },
+        {
+          "name": "抖音",
+          "monitoring_frequency": "daily",
+          "is_active": true,
+          "aliases": [],
+          "search_keywords": []
+        },
+        {
+          "name": "飞书",
+          "monitoring_frequency": "daily",
+          "is_active": true,
+          "aliases": [],
+          "search_keywords": []
+        }
+      ]
     }
   }
 }

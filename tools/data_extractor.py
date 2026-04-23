@@ -10,7 +10,9 @@ from config import config, llm_client
 
 
 EXTRACT_PROMPT = """你是一名专业情报分析师。请从以下文章中提取关于“{company}”的结构化情报。
-文章内容：{content}
+
+文章内容：
+{content}
 
 请严格输出 JSON，字段如下：
 {{
@@ -53,6 +55,13 @@ def _company_candidates(company: str) -> Set[str]:
     return {_normalize_company_name(alias) for alias in aliases if alias}
 
 
+def _normalize_dimension(value: str) -> str:
+    normalized = str(value or "").strip().lower()
+    if normalized in {"product", "pricing", "funding", "talent", "strategy"}:
+        return normalized
+    return ""
+
+
 def _infer_dimension(content: str) -> str:
     content_lower = content.lower()
     if any(token in content_lower for token in ["pricing", "价格", "定价", "套餐"]):
@@ -61,7 +70,7 @@ def _infer_dimension(content: str) -> str:
         return "funding"
     if any(token in content_lower for token in ["招聘", "高管", "任命", "离职"]):
         return "talent"
-    if any(token in content_lower for token in ["合作", "并购", "扩张", "战略"]):
+    if any(token in content_lower for token in ["合作", "并购", "扩张", "战略", "mcp", "agent"]):
         return "strategy"
     return "product"
 
@@ -70,7 +79,11 @@ def _extract_dates(content: str) -> list[str]:
     return re.findall(r"\d{4}-\d{2}-\d{2}", content)[:3]
 
 
-def _heuristic_extract(content: str, company: str) -> Optional[Dict[str, Any]]:
+def _heuristic_extract(
+    content: str,
+    company: str,
+    preferred_dimension: str = "",
+) -> Optional[Dict[str, Any]]:
     normalized_content = _normalize_company_name(content)
     if not any(alias in normalized_content for alias in _company_candidates(company)):
         return None
@@ -79,7 +92,7 @@ def _heuristic_extract(content: str, company: str) -> Optional[Dict[str, Any]]:
     excerpt = lines[0][:100] if lines else content[:100]
     return {
         "company": company,
-        "dimension": _infer_dimension(content),
+        "dimension": _normalize_dimension(preferred_dimension) or _infer_dimension(content),
         "content_type": "fact",
         "extracted_data": excerpt[:50],
         "evidence_quote": excerpt[:100],
@@ -93,13 +106,17 @@ def _heuristic_extract(content: str, company: str) -> Optional[Dict[str, Any]]:
     }
 
 
-def extract_intel(content: str, company: str) -> Optional[Dict[str, Any]]:
+def extract_intel(
+    content: str,
+    company: str,
+    preferred_dimension: str = "",
+) -> Optional[Dict[str, Any]]:
     """Extract structured intelligence or return None if irrelevant."""
     if not content.strip():
         return None
 
     if not config.llm_api_key or not config.use_llm_extraction:
-        return _heuristic_extract(content, company)
+        return _heuristic_extract(content, company, preferred_dimension=preferred_dimension)
 
     prompt = EXTRACT_PROMPT.format(company=company, content=content[:4000])
     try:
@@ -112,6 +129,11 @@ def extract_intel(content: str, company: str) -> Optional[Dict[str, Any]]:
         result = json.loads(response.choices[0].message.content)
         if result.get("skip"):
             return None
+        normalized_dimension = _normalize_dimension(result.get("dimension", ""))
+        if not normalized_dimension:
+            normalized_dimension = _normalize_dimension(preferred_dimension)
+        if normalized_dimension:
+            result["dimension"] = normalized_dimension
         return result
     except Exception:
-        return _heuristic_extract(content, company)
+        return _heuristic_extract(content, company, preferred_dimension=preferred_dimension)

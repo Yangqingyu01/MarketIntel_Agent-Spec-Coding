@@ -5,7 +5,7 @@ import { ChatInterface } from "../components/ChatInterface";
 import { FeishuPanel } from "../components/FeishuPanel";
 import { HistoryPanel } from "../components/HistoryPanel";
 import { SchedulerPanel } from "../components/SchedulerPanel";
-import type { AuthUser } from "../services/api";
+import type { AlertItem, AuthUser, AnalyzeResponse } from "../services/api";
 import { ConfigPage } from "./ConfigPage";
 
 export type AppLanguage = "zh" | "en";
@@ -56,6 +56,7 @@ export function DashboardPage({
   const [activeTab, setActiveTab] = useState<TabId>("analysis");
   const [tabPulseKey, setTabPulseKey] = useState(0);
   const [scrollY, setScrollY] = useState(0);
+  const [latestAnalysisAlerts, setLatestAnalysisAlerts] = useState<AlertItem[]>([]);
   const heroSectionRef = useRef<HTMLElement | null>(null);
   const workspaceSectionRef = useRef<HTMLElement | null>(null);
   const snapLockRef = useRef(false);
@@ -281,6 +282,10 @@ export function DashboardPage({
     transform: `translateY(${(1 - workspaceStageProgress) * 96}px)`,
   };
 
+  function handleAnalysisResult(result: AnalyzeResponse) {
+    setLatestAnalysisAlerts(result.alerts);
+  }
+
   return (
     <div className="bau-page">
       <a href="#main-content" className="skip-link">
@@ -416,7 +421,7 @@ export function DashboardPage({
               {activeTab === "analysis" ? (
                 <div className="bau-workspace-stack">
                   <SectionErrorBoundary label="analysis">
-                    <ChatInterface language={language} />
+                    <ChatInterface language={language} onResult={handleAnalysisResult} />
                   </SectionErrorBoundary>
                 </div>
               ) : null}
@@ -424,7 +429,7 @@ export function DashboardPage({
               {activeTab === "alerts" ? (
                 <div className="bau-workspace-grid">
                   <SectionErrorBoundary label="alerts">
-                    <AlertPanel language={language} />
+                    <AlertPanel language={language} latestAlerts={latestAnalysisAlerts} />
                   </SectionErrorBoundary>
                   <aside className="bau-quote">
                     <p className="bau-quote__mark" aria-hidden="true">

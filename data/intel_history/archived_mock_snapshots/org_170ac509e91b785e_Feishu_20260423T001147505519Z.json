@@ -1,0 +1,38 @@
+{
+  "snapshot_id": "SNP-Feishu-20260423T001147505519Z",
+  "organization_id": "org_170ac509e91b785e",
+  "company": "Feishu",
+  "snapshot_date": "2026-04-23T00:11:47+00:00",
+  "baseline_status": "cold_start",
+  "dimensions": [
+    "pricing"
+  ],
+  "overall_confidence": 0.52,
+  "source_count": 2,
+  "items": [
+    {
+      "company": "Feishu",
+      "dimension": "pricing",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/Feishu/product-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "Feishu",
+      "dimension": "pricing",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/Feishu/pricing-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    }
+  ]
+}

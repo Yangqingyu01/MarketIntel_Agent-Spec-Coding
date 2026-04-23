@@ -166,6 +166,7 @@ async def analyze(
         "task_id": result["task_id"],
         "report": result["report"],
         "alerts": result["alerts"],
+        "change_events": result["change_events"],
         "intel_count": len(result["analysis_results"]),
     }
 
@@ -226,7 +227,15 @@ async def feishu_status() -> Dict:
         "headline": "Daily monitoring digest preview",
     }
     sample_card = build_digest_card(sample_summary)
-    preview_delivery = send_card(sample_card)
+    try:
+        preview_delivery = send_card(sample_card)
+    except Exception as exc:
+        preview_delivery = {
+            "ok": False,
+            "delivery_mode": "error",
+            "chat_id": "",
+            "error": str(exc),
+        }
     target_chat = config.feishu_target_chat_id
     masked_chat = (
         ""
@@ -241,6 +250,8 @@ async def feishu_status() -> Dict:
         "delivery_mode": preview_delivery.get("delivery_mode", "mock"),
         "app_id_configured": bool(config.feishu_app_id),
         "app_secret_configured": bool(config.feishu_app_secret),
+        "verification_token_configured": bool(config.feishu_verification_token),
+        "encryption_enabled": bool(config.feishu_encrypt_key),
         "target_chat_configured": bool(target_chat),
         "target_chat_masked": masked_chat,
         "webhook_endpoint": "/api/feishu/webhook",
@@ -251,6 +262,40 @@ async def feishu_status() -> Dict:
         },
         "sample_card": sample_card,
     }
+
+
+@router.get("/feishu/callback")
+async def feishu_callback(
+    code: str = Query(..., description="飞书授权码"),
+    state: str = Query("", description="状态参数")
+) -> Dict:
+    """飞书授权回调处理"""
+    from feishu.sender import get_user_access_token
+    
+    # 使用授权码获取访问令牌
+    result = get_user_access_token(code)
+    
+    if result.get("ok"):
+        data = result.get("data", {})
+        access_token = data.get("access_token")
+        refresh_token = data.get("refresh_token")
+        expires_in = data.get("expires_in")
+        
+        return {
+            "ok": True,
+            "message": "授权成功",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_in": expires_in,
+            "state": state
+        }
+    else:
+        return {
+            "ok": False,
+            "message": "授权失败",
+            "error": result.get("error", "未知错误"),
+            "state": state
+        }
 
 
 @router.get("/history")

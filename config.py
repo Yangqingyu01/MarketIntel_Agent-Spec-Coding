@@ -67,6 +67,12 @@ class AppConfig:
     feishu_target_chat_id: str = field(
         default_factory=lambda: os.getenv("FEISHU_TARGET_CHAT_ID", "")
     )
+    feishu_verification_token: str = field(
+        default_factory=lambda: os.getenv("FEISHU_VERIFICATION_TOKEN", "")
+    )
+    feishu_encrypt_key: str = field(
+        default_factory=lambda: os.getenv("FEISHU_ENCRYPT_KEY", "")
+    )
 
     auth_secret_key: str = field(
         default_factory=lambda: os.getenv(

@@ -1,0 +1,138 @@
+{
+  "snapshot_id": "SNP-Feishu-20260423T055022020513Z",
+  "organization_id": "org_170ac509e91b785e",
+  "company": "Feishu",
+  "snapshot_date": "2026-04-23T05:50:22+00:00",
+  "baseline_status": "cold_start",
+  "dimensions": [
+    "funding",
+    "pricing",
+    "product",
+    "strategy",
+    "talent"
+  ],
+  "overall_confidence": 0.52,
+  "source_count": 10,
+  "items": [
+    {
+      "company": "Feishu",
+      "dimension": "product",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/Feishu/product-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "Feishu",
+      "dimension": "product",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/Feishu/pricing-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "Feishu",
+      "dimension": "pricing",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/Feishu/product-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "Feishu",
+      "dimension": "pricing",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/Feishu/pricing-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "Feishu",
+      "dimension": "funding",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/Feishu/product-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "Feishu",
+      "dimension": "funding",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/Feishu/pricing-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "Feishu",
+      "dimension": "talent",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "Feishu 今日发布新的智能协作能力，覆盖产品动态与会议场景。",
+      "evidence_quote": "Feishu 今日发布新的智能协作能力，覆盖产品动态与会议场景。",
+      "source_url": "https://example.com/Feishu/product-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "Feishu",
+      "dimension": "talent",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "Feishu 宣布套餐价格调整，并强化企业版能力。",
+      "evidence_quote": "Feishu 宣布套餐价格调整，并强化企业版能力。",
+      "source_url": "https://example.com/Feishu/pricing-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "Feishu",
+      "dimension": "strategy",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "Feishu 今日发布新的智能协作能力，覆盖产品动态与会议场景。",
+      "evidence_quote": "Feishu 今日发布新的智能协作能力，覆盖产品动态与会议场景。",
+      "source_url": "https://example.com/Feishu/product-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "Feishu",
+      "dimension": "strategy",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "Feishu 宣布套餐价格调整，并强化企业版能力。",
+      "evidence_quote": "Feishu 宣布套餐价格调整，并强化企业版能力。",
+      "source_url": "https://example.com/Feishu/pricing-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    }
+  ]
+}

@@ -33,9 +33,15 @@ def analyze_results(
     analysis_results: List[Dict[str, Any]] = []
     seen_signatures = set()
     for item in search_results:
-        extracted = extract_intel(item.get("content", ""), target)
+        extracted = extract_intel(
+            item.get("content", ""),
+            target,
+            preferred_dimension=item.get("dimension", ""),
+        )
         if not extracted:
             continue
+        if item.get("dimension") and extracted.get("dimension") != item.get("dimension"):
+            extracted["dimension"] = item.get("dimension")
         signature = (
             extracted.get("dimension", ""),
             extracted.get("extracted_data", ""),

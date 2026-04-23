@@ -1170,6 +1170,41 @@ textarea:focus-visible {
   text-transform: uppercase;
 }
 
+.bau-insight-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.bau-insight-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  padding-top: 0.35rem;
+  border-top: 3px solid rgba(18, 18, 18, 0.18);
+}
+
+.bau-chart-card--blue .bau-insight-row {
+  border-top-color: rgba(255, 255, 255, 0.28);
+}
+
+.bau-insight-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.bau-insight-row__label {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.bau-insight-row__value {
+  font-size: 1.05rem;
+  font-weight: 900;
+  text-align: right;
+  text-transform: uppercase;
+}
+
 .bau-quality-note {
   margin: 0;
   line-height: 1.7;

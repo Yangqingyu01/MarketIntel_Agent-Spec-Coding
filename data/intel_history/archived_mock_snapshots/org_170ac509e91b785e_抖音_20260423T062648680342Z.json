@@ -1,0 +1,63 @@
+{
+  "snapshot_id": "SNP-抖音-20260423T062648680342Z",
+  "organization_id": "org_170ac509e91b785e",
+  "company": "抖音",
+  "snapshot_date": "2026-04-23T06:26:48+00:00",
+  "baseline_status": "cold_start",
+  "dimensions": [
+    "pricing",
+    "product"
+  ],
+  "overall_confidence": 0.52,
+  "source_count": 4,
+  "items": [
+    {
+      "company": "抖音",
+      "dimension": "product",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/抖音/product-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "抖音",
+      "dimension": "product",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/抖音/pricing-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "抖音",
+      "dimension": "pricing",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/抖音/product-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    },
+    {
+      "company": "抖音",
+      "dimension": "pricing",
+      "content_type": "fact",
+      "credibility": 0.52,
+      "extracted_data": "示例公开页面",
+      "evidence_quote": "示例公开页面",
+      "source_url": "https://example.com/抖音/pricing-update",
+      "source_name": "example.com",
+      "publish_date": "2026-04-23",
+      "crawl_date": "2026-04-23"
+    }
+  ]
+}

@@ -46,7 +46,7 @@ def build_report(
             {
                 "priority": "TODAY",
                 "department": "战略",
-                "action": "优先处理最新变化预警并确认是否需要飞书同步。",
+                "action": "优先处理最新变化预警，并确认是否需要同步飞书群。",
                 "basis": alerts[0].get("description", ""),
             }
         )
@@ -85,7 +85,7 @@ def build_report(
         "report_type": "single",
         "target": target,
         "generated_at": utc_now_iso(),
-        "time_range_covered": "近3个月",
+        "time_range_covered": "近三个月",
         "executive_summary": executive_summary,
         "dimensions_detail": grouped,
         "changes_summary": changes_summary,

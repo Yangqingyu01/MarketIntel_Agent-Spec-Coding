@@ -38,6 +38,7 @@ export function SchedulerPanel({ language }: SchedulerPanelProps) {
         watchlist: "监测目标",
         jobs: "任务数",
         empty: "当前没有可展示的摘要预览。",
+        disabledButReady: "当前未启用自动调度，但下方仍展示最近一次已生成的摘要结果。",
         reports: "报告",
         alerts: "预警",
         trigger: "触发器",
@@ -55,6 +56,7 @@ export function SchedulerPanel({ language }: SchedulerPanelProps) {
       watchlist: "Watchlist",
       jobs: "Jobs",
       empty: "No digest preview is available yet.",
+      disabledButReady: "Automation is off, but recent digest previews are still shown below.",
       reports: "Reports",
       alerts: "Alerts",
       trigger: "Trigger",
@@ -64,6 +66,7 @@ export function SchedulerPanel({ language }: SchedulerPanelProps) {
   }, [language]);
 
   const jobs = status?.scheduler.jobs ?? [];
+  const hasDigestPreview = Boolean(daily || weekly);
 
   return (
     <section className="bau-panel bau-panel--white">
@@ -103,7 +106,9 @@ export function SchedulerPanel({ language }: SchedulerPanelProps) {
           {jobs.length === 0 ? (
             <article className="bau-job-card">
               <h3 className="bau-job-card__title">{copy.off}</h3>
-              <p className="bau-job-card__text">{copy.empty}</p>
+              <p className="bau-job-card__text">
+                {hasDigestPreview ? copy.disabledButReady : copy.empty}
+              </p>
             </article>
           ) : null}
         </div>

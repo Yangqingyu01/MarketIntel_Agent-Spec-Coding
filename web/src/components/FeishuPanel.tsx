@@ -20,15 +20,20 @@ export function FeishuPanel({ language }: FeishuPanelProps) {
         label: "飞书 / 投递",
         title: "飞书配置状态",
         configured: "配置",
-        mode: "发送模式",
+        mode: "投递模式",
         appId: "App ID",
         secret: "App Secret",
+        verification: "验证 Token",
+        encryption: "事件加密",
         target: "目标会话",
         webhook: "Webhook",
         preview: "示例投递",
         ready: "已配置",
         missing: "未配置",
-        sample: "示例卡片已生成，可用于验证投递通路。",
+        sample: "系统会先检查飞书是否满足真实投递条件，再决定是走真实发送还是本地回退。",
+        inboundStatus: "接收消息链路",
+        inboundBlocked: "当前还不能接收飞书真实消息，至少还缺验证 Token 或公网回调地址。",
+        inboundReady: "当前配置已接近可用，下一步需要在飞书开放平台完成事件订阅验证。",
       };
     }
 
@@ -39,14 +44,27 @@ export function FeishuPanel({ language }: FeishuPanelProps) {
       mode: "Delivery Mode",
       appId: "App ID",
       secret: "App Secret",
+      verification: "Verification Token",
+      encryption: "Event Encryption",
       target: "Target Chat",
       webhook: "Webhook",
       preview: "Preview Delivery",
       ready: "Ready",
       missing: "Missing",
-      sample: "A sample card has been prepared to verify the delivery path.",
+      sample: "The system checks live Feishu readiness before choosing real delivery or local fallback.",
+      inboundStatus: "Inbound Message Path",
+      inboundBlocked:
+        "Real Feishu incoming messages are still blocked because the verification token or a public callback URL is missing.",
+      inboundReady:
+        "The Feishu app is close to ready. The remaining step is to complete event subscription verification in the platform console.",
     };
   }, [language]);
+
+  const inboundReady = Boolean(
+    status?.app_id_configured &&
+      status?.app_secret_configured &&
+      status?.verification_token_configured,
+  );
 
   return (
     <section className="bau-panel bau-panel--blue">
@@ -71,6 +89,8 @@ export function FeishuPanel({ language }: FeishuPanelProps) {
           <div className="bau-feishu-checks">
             <div>{copy.appId}: {status?.app_id_configured ? copy.ready : copy.missing}</div>
             <div>{copy.secret}: {status?.app_secret_configured ? copy.ready : copy.missing}</div>
+            <div>{copy.verification}: {status?.verification_token_configured ? copy.ready : copy.missing}</div>
+            <div>{copy.encryption}: {status?.encryption_enabled ? copy.ready : copy.missing}</div>
             <div>{copy.target}: {status?.target_chat_masked || copy.missing}</div>
             <div>{copy.webhook}: {status?.webhook_endpoint ?? "/api/feishu/webhook"}</div>
           </div>
@@ -89,6 +109,9 @@ export function FeishuPanel({ language }: FeishuPanelProps) {
           </p>
           <p className="bau-feishu-card__text">
             {copy.target}: {status?.preview_delivery.chat_id || copy.missing}
+          </p>
+          <p className="bau-feishu-card__text">
+            {copy.inboundStatus}: {inboundReady ? copy.inboundReady : copy.inboundBlocked}
           </p>
         </article>
       </div>

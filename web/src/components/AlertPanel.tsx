@@ -5,13 +5,16 @@ import { fetchAlerts, type AlertItem } from "../services/api";
 import {
   localizeAlertDescription,
   localizeAlertTitle,
+  localizeCompanyName,
+  localizeSeverity,
 } from "../services/localization";
 
 type AlertPanelProps = {
   language: AppLanguage;
+  latestAlerts?: AlertItem[];
 };
 
-export function AlertPanel({ language }: AlertPanelProps) {
+export function AlertPanel({ language, latestAlerts = [] }: AlertPanelProps) {
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +25,12 @@ export function AlertPanel({ language }: AlertPanelProps) {
       .finally(() => setLoading(false));
   }, []);
 
-  const grouped = useMemo(() => alerts.slice(0, 4), [alerts]);
+  const grouped = useMemo(() => {
+    if (latestAlerts.length > 0) {
+      return latestAlerts.filter((alert) => !isDemoFallbackAlert(alert)).slice(0, 4);
+    }
+    return alerts.filter((alert) => !isDemoFallbackAlert(alert)).slice(0, 4);
+  }, [alerts, latestAlerts]);
 
   const copy = useMemo(() => {
     if (language === "zh") {
@@ -53,12 +61,11 @@ export function AlertPanel({ language }: AlertPanelProps) {
           <h2 className="bau-panel__title">{copy.title}</h2>
         </div>
         <span className="bau-pill bau-pill--yellow">
-          {copy.recentCount} / {loading ? "..." : alerts.length}
+          {copy.recentCount} / {loading && latestAlerts.length === 0 ? "..." : (latestAlerts.length || alerts.length)}
         </span>
       </div>
 
       {loading ? <p className="bau-helper">{copy.loading}</p> : null}
-
       {!loading && grouped.length === 0 ? <p className="bau-helper">{copy.empty}</p> : null}
 
       <div className="bau-alerts__grid">
@@ -68,8 +75,12 @@ export function AlertPanel({ language }: AlertPanelProps) {
             className={`bau-alert-card bau-alert-card--${alert.severity}`}
           >
             <div className="bau-config-card__meta">
-              <span className="bau-pill bau-pill--white">{alert.severity}</span>
-              <span className="bau-meta">{alert.company}</span>
+              <span className="bau-pill bau-pill--white">
+                {localizeSeverity(alert.severity, language)}
+              </span>
+              <span className="bau-meta">
+                {localizeCompanyName(alert.company, language)}
+              </span>
             </div>
             <h3 className="bau-alert-card__title">
               {localizeAlertTitle(alert, language)}
@@ -78,11 +89,24 @@ export function AlertPanel({ language }: AlertPanelProps) {
               {localizeAlertDescription(alert, language)}
             </p>
             <p className="bau-meta" style={{ marginTop: "1rem" }}>
-              {alert.detected_at}
+              {alert.detected_at.replace("T", " ").replace("+00:00", " UTC")}
             </p>
           </article>
         ))}
       </div>
     </section>
+  );
+}
+
+function isDemoFallbackAlert(alert: AlertItem): boolean {
+  const title = String(alert.title || "").toLowerCase();
+  const description = String(alert.description || "").toLowerCase();
+  const sourceUrl = String(alert.source_url || "").toLowerCase();
+
+  return (
+    title.includes("example.com") ||
+    description.includes("example.com") ||
+    description.includes("示例公开页面") ||
+    sourceUrl.includes("example.com")
   );
 }
